@@ -1,0 +1,48 @@
+{
+  "scope": "Observer-only boundaries; no biology assertions; model sources not patched",
+  "tests": [
+    {
+      "id": "SHORT_TREND_USES_MEASURED_DURATION",
+      "pass": true,
+      "observation": {
+        "state": "flat",
+        "text": "近乎不變",
+        "delta": 0,
+        "seconds": 0.2,
+        "fromTick": 6,
+        "toTick": 12
+      }
+    },
+    {
+      "id": "OLD_SELECTION_IS_NOT_CURRENT_TREND",
+      "pass": true,
+      "observation": {
+        "state": "missing",
+        "text": null,
+        "reason": "observation-gap"
+      },
+      "currentTick": 600
+    },
+    {
+      "id": "GAPS_ARE_NOT_OBSERVATION_COVERAGE",
+      "pass": true,
+      "coverage": 2.6,
+      "totalSpan": 22.8
+    },
+    {
+      "id": "ONE_REMAINING_SAMPLE_IS_VALID_MISSING_HISTORY",
+      "pass": true,
+      "tick": 4206,
+      "points": [
+        {
+          "t": 4206,
+          "v": 0.9798625819670722
+        }
+      ]
+    }
+  ],
+  "summary": {
+    "passed": 4,
+    "failed": 0
+  }
+}

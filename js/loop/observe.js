@@ -23,7 +23,7 @@
   const NEAR_ZERO = 0.005;           // 負載「近乎不變」閾值
 
   const Observe = {
-    observationVersion: 'v0.3.0-obs.1',
+    observationVersion: 'v0.3.2-obs.2',
     sessionEpoch: 0,
     enabled: true,
     _branches: null,      // branchId → { tickRing:[{t,fl,ft,u}], lastRecorded, samples:{entityId:[{t,v}]} }
@@ -165,21 +165,27 @@
       const h = this.loadHistory(branchId, entityId);
       if (!h.available || h.points.length < 2) return { state: 'missing', text: null };
       const pts = h.points;
-      const now = pts[pts.length - 1].v;
-      const ref = pts[Math.max(0, pts.length - 1 - 10)];
-      if (!ref || pts[pts.length - 1].t - ref.t > 60)
-        return { state: 'missing', text: null, gap: pts[pts.length - 1].t - (ref ? ref.t : pts[0].t) };
-      const d = now - ref.v;
-      if (d > NEAR_ZERO) return { state: 'up', text: '上升', delta: d };
-      if (d < -NEAR_ZERO) return { state: 'down', text: '下降', delta: d };
-      return { state: 'flat', text: '近乎不變', delta: d };
+      const tail = pts.slice(-11), latest = tail[tail.length - 1], ref = tail[0];
+      const b = this._branches[branchId];
+      // A selected entity may have old samples: never label them as a current trend.
+      const contiguous = tail.every((p, i) => i === 0 || p.t - tail[i - 1].t === SAMPLE_EVERY);
+      if (!contiguous || b.lastRecorded - latest.t >= SAMPLE_EVERY)
+        return { state: 'missing', text: null, reason: 'observation-gap' };
+      const d = latest.v - ref.v;
+      const window = { delta: d, seconds: (latest.t - ref.t) * DT,
+        fromTick: ref.t, toTick: latest.t };
+      if (d > NEAR_ZERO) return { state: 'up', text: '上升', ...window };
+      if (d < -NEAR_ZERO) return { state: 'down', text: '下降', ...window };
+      return { state: 'flat', text: '近乎不變', ...window };
     },
 
     /* 覆蓋樣本所涵蓋的時間（模型秒） */
     coverageSeconds(branchId, entityId) {
       const h = this.loadHistory(branchId, entityId);
       if (!h.available || h.points.length < 2) return null;
-      return (h.points[h.points.length - 1].t - h.points[0].t) * DT;
+      // Count observed adjacent intervals, not unobserved gaps between selections.
+      return h.points.reduce((sum, p, i, pts) =>
+        sum + (i > 0 && p.t - pts[i - 1].t === SAMPLE_EVERY ? SAMPLE_EVERY * DT : 0), 0);
     }
   };
 

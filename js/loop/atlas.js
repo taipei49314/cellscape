@@ -67,7 +67,16 @@
       return { M, view, branchId, entityId };
     },
 
-    onImport() { this.render(); },   // 匯入＝新觀察工作階段：重繪，不殘留舊曲線
+    onImport() {
+      this._lastKey = null;
+      this._xsecOpen = false; this._xsecStamp = null;
+      $('xsecModal').classList.add('hidden');
+      this.render();
+    },
+
+    _contextKey(view, branchId, entityId) {
+      return [CSL.Observe.sessionEpoch, view.runId, branchId, entityId, view.tick].join('|');
+    },
 
     /* 每 ~10 tick 的動態刷新（由 _tickUI 呼叫）。
        刷新鍵＝session+分支+實體+tick：暫停中切換分支/選取（tick 不變）也必須重繪
@@ -76,13 +85,13 @@
        （SECTION_MODAL_TIME_VALIDITY 契約）。 */
     tick(view, branchId, entityId) {
       if (this._xsecOpen) {
-        const stamp = 'tick' + view.tick;
+        const stamp = this._contextKey(view, branchId, entityId);
         if (this._xsecStamp !== stamp) { this._xsecStamp = stamp; this.openSection(); }
       }
       if ($('inspector').classList.contains('closed')) return;
       if (($('atlasSearch').value || '').trim()) return;
       if (this.activeTab !== 'now') return;
-      const key = CSL.Observe.sessionEpoch + '|' + branchId + '|' + entityId + '|' + view.tick;
+      const key = this._contextKey(view, branchId, entityId);
       if (key === this._lastKey) return;
       this._lastKey = key;
       this._setBody(this.renderNow());
@@ -231,11 +240,11 @@
       const change = CSL.Observe.recentChange(branchId, entityId);
       const changeLine = change.state === 'missing'
         ? '負載最近變化：資料不足（本實體樣本尚少）。'
-        : `負載最近變化（約比 2 模型秒前）：${change.text}${change.delta != null ? '（' + (change.delta > 0 ? '+' : '') + change.delta.toFixed(3) + '）' : ''}。`;
+        : `負載最近變化（觀測 ${change.seconds.toFixed(1)} 模型秒）：${change.text}${change.delta != null ? '（' + (change.delta > 0 ? '+' : '') + change.delta.toFixed(3) + '）' : ''}。`;
       const cov = CSL.Observe.coverageSeconds(branchId, entityId);
       const covLine = cov == null
         ? '觀察覆蓋：選取剛改變或剛匯入——本實體尚無歷史樣本（明示缺資料，不捏造曲線）。'
-        : `觀察覆蓋：本樣本涵蓋最近約 ${cov.toFixed(1)} 模型秒。`;
+        : `觀察覆蓋：窗口內已觀測約 ${cov.toFixed(1)} 模型秒（空窗不計入）。`;
       /* 卡片語境：看此刻永遠顯示「選取的模型實體」；知識卡未個別模擬（非阻塞觀察修復） */
       const activeCard = CSL.Content.cards.find((c) => c.id === this.activeCard);
       const cardNote = this.activeCard !== 'rbc' && activeCard
@@ -292,7 +301,7 @@
         return;
       }
       const pts = h.points;
-      const tEnd = pts[pts.length - 1].t;
+      const tEnd = view.tick; // 現在由模型時鐘定義，不由舊選取最後的樣本定義
       const t0 = Math.max(0, tEnd - 3600);                     // 上界 120 模型秒
       const win = pts.filter((p) => p.t >= t0);
       const span = Math.max(1, tEnd - t0);
@@ -323,7 +332,7 @@
         else g.lineTo(x(p.t), y(p.v));
       }
       g.stroke();
-      if (note) note.textContent = `選取 RBC 氧負載時間線（每 6 tick 一點＝0.2 模型秒；覆蓋約 ${((tEnd - t0) / 30).toFixed(1)} 模型秒，上限 120；右端＝最新樣本）。`;
+      if (note) note.textContent = `選取 RBC 氧負載時間線（每 6 tick 一點＝0.2 模型秒；圖窗 ${((tEnd - t0) / 30).toFixed(1)} 模型秒，上限 120；右端＝目前 tick ${view.tick}，空白代表未觀察）。`;
     },
 
     /* ---------- 懂機制 ---------- */
@@ -388,7 +397,7 @@
     openSection() {
       const { view, branchId, entityId } = this._sel();
       this._xsecOpen = true;
-      this._xsecStamp = 'tick' + view.tick;
+      this._xsecStamp = this._contextKey(view, branchId, entityId);
       const e = entityId != null ? view.entities[entityId] : null;
       const onLung = e && CSL.EDGES[e.edge] && CSL.EDGES[e.edge].exchange === 'lung';
       const rate = CSL.Observe.readout(view, branchId, entityId, 'flux_lung_rate');
@@ -425,7 +434,7 @@
         </svg>
         <div class="nowLine">${esc(rbcNote)}</div>
         ${fluxNote ? `<div class="nowLine dim">${esc(fluxNote)}</div>` : ''}
-        <div class="vc mono tiny">觀察時點：tick ${view.tick}${M_paused() ? '（模型暫停中，內容不隨時間變化）' : '（模型運行中，內容隨 tick 更新）'}</div>
+        <div class="vc mono tiny">觀察時點：session ${CSL.Observe.sessionEpoch} · 分支 ${esc(branchId)} · tick ${view.tick}${M_paused() ? '（模型暫停中，內容不隨時間變化）' : '（模型運行中，內容隨 tick 更新）'}</div>
         <div class="dim tiny">AT2 與巨噬細胞僅為知識層示意——不混入活體數量、氧守恆帳與世界實體清單（48 顆 RBC 之外無其他模型實體）。</div>`;
       $('xsecModal').classList.remove('hidden');
 

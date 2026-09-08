@@ -237,6 +237,7 @@
       $('inspector').classList.toggle('closed', !show);
       $('evidencePanel').classList.add('closed');
       document.body.classList.toggle('atlas-open', !!show);
+      document.body.classList.remove('evidence-open');
       if (show && CSL.Atlas) CSL.Atlas.render();   // 開啟檢閱即渲染當前頁籤
     },
     _setReduced(on) {
