@@ -12,7 +12,7 @@
 - 氧代理量：0–1 的無因次負載（RBC）與「模型單位」庫存（肺泡 40、組織 25 容量）。
 - 係數：`K_LUNG=0.05`、`K_TISSUE=0.045`、`K_USE=0.09`（每 tick），皆為工程近似。
 - **不是** SpO2、血氧分壓、ATP 或臨床分數；介面已常駐標示。
-- 界面通量 = 係數 × 驅動量差 × 可用量（受方容量與供方現有限制）。
+- 肺端裝載 = K_LUNG × max(0, 肺泡水位 − 負載) × lungSupply；組織卸載 = K_TISSUE × max(0, 負載 − 組織水位) × (0.5 + tissueDemand)。兩者再受供方庫存與接收方容量上限限制；容量限制不是額外乘數。
 - 組織使用 = K × (0.5 + 需求參數) × 水位，受現有庫存限制；庫存為零即無消耗。
 
 ## 守恆帳
@@ -63,10 +63,10 @@
 
 - 執行包（JSON）：modelVersion、schemaVersion、種子、RNG 狀態、固定步長、
   動作序列、實體、庫存、帳本、事件尾、閾值旗標、ID 分配狀態、摘要鏈尾。
-- 摘要（digest）涵蓋**影響未來演化的全部狀態**：tick、參數、庫存（含容量）、
+- 摘要（digest）比對下列指定模型欄位：tick、參數、庫存（含容量）、
   實體（含 cap）、待處理 command 佇列、**事件序列配號 eventSeq**
   （MODEL_STATE_DIGEST_COVERAGE 契約；DIGEST_SCOPE 修復——摘要相等即保證
-  後續配號一致；事件流分歧 ⇒ 摘要分歧）。
+  受測配號差異可識別；不保證不同事件歷史必然有不同摘要）。
   **摘要範圍界線（DIGEST_IS_NOT_EVENT_HISTORY_IDENTITY）**：摘要不涵蓋事件的
   來源標籤（user/tour 等證據性欄位）或事件史內容本身——摘要相等**不**宣稱
   「完整事件史一致」；事件史的證據完整性由快照/執行包的事件尾與
@@ -228,3 +228,10 @@ pass 條件本身（短路安全）評估為真。原封腳本不予改動，留
 既有全套回歸（loop_contracts 8/8、independent_v021 5/5、independent_v023 3/3、
 r3 8/8、r4 7/7、reset-boundary、32 矩陣）零退步；自建 atlas-tests 8/8、
 loop-smoke 7/7（已隨包）。
+
+
+## v0.3.2 私人封存收尾
+
+本輪只改觀察／介面：短窗口按實際觀測秒數描述；選取空窗不算覆蓋時間，舊樣本不冒充目前趨勢；圖右端綁定 world.tick；剖面刷新識別綁定 session／run／branch／entity／tick，匯入後關閉舊剖面；面板互斥 class 完整清理。
+MODEL_VERSION=0.2.2 未變，Content 保持原樣；observationVersion=v0.3.2-obs.2。
+本次結論以 FINAL-REVIEW.md 與交付證據為準。以上歷次勾選表是歷史紀錄，不代表新增範圍已驗證。GitHub 遠端推送尚未執行，不以本機 commit 代替遠端收據。

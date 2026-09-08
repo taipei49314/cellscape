@@ -1,3 +1,5 @@
+> 歷史審查／交付說明。當前私人封存範圍請見 [FINAL-REVIEW](docs/FINAL-REVIEW.md)。
+
 # CELLSCAPE 審查包 · Review Guide
 
 > 打包日期：2026-09-07 · 版本：概念驗證 v0.1-r4（含三輪獨立稽核之修復與複驗，詳見 `docs/AUDIT-RESPONSE.md`）

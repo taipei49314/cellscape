@@ -1,0 +1,9 @@
+{
+  "name": "cellscape-private",
+  "version": "0.3.2",
+  "private": true,
+  "description": "Cellscape Living Atlas Gate A/B private freeze",
+  "scripts": {
+    "test": "node scripts/test.cjs"
+  }
+}

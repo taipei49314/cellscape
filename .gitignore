@@ -1,0 +1,21 @@
+# Local credentials and environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+# Tool state and generated artifacts
+node_modules/
+__pycache__/
+.pytest_cache/
+.playwright/
+test-results/
+artifacts/
+.DS_Store
+Thumbs.db
+*.log
+*.zip
+*.bundle
+PUSH-RECEIPT.json

@@ -1,0 +1,55 @@
+[
+  {
+    "pass": true,
+    "before": "肺泡氣側（alveolus）\nAT1 上皮（薄壁）\n基底膜＋內皮\n毛細血管管腔（血漿＋RBC）\n紅血球（示意位置）\nAT2／巨噬（知識層示意，不在模型實體清單）\n選取的紅血球 #5 目前不在肺部交換段（位於肺靜脈）；剖面僅為結構知識示意。\n觀察時點：session 1 · 分支 B · tick 1800（模型暫停中，內容不隨時間變化）\nAT2 與巨噬細胞僅為知識層示意——不混入活體數量、氧守恆帳與世界實體清單（48 顆 RBC 之外無其他模型實體）。",
+    "afterContextChange": "肺泡氣側（alveolus）\nAT1 上皮（薄壁）\n基底膜＋內皮\n毛細血管管腔（血漿＋RBC）\n紅血球（示意位置）\nO₂（實測通量流向）\nAT2／巨噬（知識層示意，不在模型實體清單）\n選取的紅血球 #5 目前不在肺部交換段（位於肺靜脈）；剖面僅為結構知識示意。\n觀察時點：session 1 · 分支 A · tick 1800（模型暫停中，內容不隨時間變化）\nAT2 與巨噬細胞僅為知識層示意——不混入活體數量、氧守恆帳與世界實體清單（48 顆 RBC 之外無其他模型實體）。",
+    "import": {
+      "open": false,
+      "hidden": true,
+      "tick": 1200,
+      "epoch": 2
+    },
+    "method": "real modal/file input; A/B context switch invoked via supported Main API while modal is open",
+    "id": "SECTION_CONTEXT_AND_IMPORT_ISOLATION",
+    "pageErrors": [],
+    "console": [],
+    "loopErrors": []
+  },
+  {
+    "tick": 600,
+    "latestSample": 60,
+    "lastX": 53.900000000000006,
+    "right": 269,
+    "change": {
+      "state": "missing",
+      "text": null,
+      "reason": "observation-gap"
+    },
+    "text": "選取 RBC 氧負載時間線（每 6 tick 一點＝0.2 模型秒；圖窗 20.0 模型秒，上限 120；右端＝目前 tick 600，空白代表未觀察）。",
+    "pass": true,
+    "id": "OLD_SAMPLE_NOT_LABELLED_NOW",
+    "pageErrors": [],
+    "console": [],
+    "loopErrors": []
+  },
+  {
+    "pass": true,
+    "text": "session #1 · 分支 B · run run-51eed-mtse9li0 · tick 12 · 實體 #5\n內容包 v0.3.0-content.1 · 觀察規則 v0.3.2-obs.2\n位於肺部交換區域；觀察窗尚未取得（12/90 tick），不推測交換狀態。\n負載最近變化（觀測 0.2 模型秒）：上升（+0.005）。\n觀察覆蓋：窗口內已觀測約 0.2 模型秒（空窗不計入）。\n選取 RBC 氧負載\n15%\n組織庫存水位\n38%\n送達速率（RBC→組織） （模型單位／模型秒）\n缺資料（窗口 12/90 tick）\n肺泡側庫存水位\n17%\n肺端裝載速率（肺泡→RBC） （模型單位／模型秒）\n缺資料（窗口 12/90 tick）\n組織使用速率 （模型單位／模型秒）\n缺資料（窗口 12/90 tick）\n顯示前三項為預設讀值；其餘三項展開顯示。\n展開守恆帳與規則細節\n這裡的百分比是相對模型容量，不是 SpO₂；速率以模型時間換算（dt = 1/30 模型秒）。\n選取 RBC 氧負載時間線（每 6 tick 一點＝0.2 模型秒；圖窗 0.4 模型秒，上限 120；右端＝目前 tick 12，空白代表未觀察）。",
+    "id": "SHORT_WINDOW_TEXT_MATCHES_MEASUREMENT",
+    "pageErrors": [],
+    "console": [],
+    "loopErrors": []
+  },
+  {
+    "pass": true,
+    "classes": {
+      "atlas": false,
+      "evidence": false
+    },
+    "method": "evidence button, supported selection-to-inspector path, real close button",
+    "id": "PANEL_OWNERSHIP_CLASSES_CLEAR",
+    "pageErrors": [],
+    "console": [],
+    "loopErrors": []
+  }
+]

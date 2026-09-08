@@ -1,0 +1,145 @@
+{
+  "scope": "One bounded closure round: uploaded v0.3.1 -> patched v0.3.2 private Gate A/B freeze. Source freeze is complete; remote publication is NOT_PUSHED.",
+  "date": "2026-09-08",
+  "inputZip": "cellscape-v0.3.1-living-atlas.zip",
+  "inputSHA256": "4e736e222624a907a4777b32bb5e731a6b587f6182d31738797e3b0b8c4fb01b",
+  "productVersion": "0.3.2",
+  "modelVersion": "0.2.2",
+  "contentUnchanged": true,
+  "observationVersion": "v0.3.2-obs.2",
+  "checks": {
+    "package_npm_test": {
+      "passed": 19,
+      "failed": 0,
+      "parts": [
+        8,
+        7,
+        4
+      ],
+      "scope": "scoped Node checks only"
+    },
+    "independent_atlas": {
+      "passed": 9,
+      "failed": 0
+    },
+    "final_observer_boundaries": {
+      "passed": 4,
+      "failed": 0
+    },
+    "browser_previous_atlas_contracts": {
+      "passed": 6,
+      "failed": 0
+    },
+    "browser_additional_boundaries": {
+      "passed": 4,
+      "failed": 0
+    },
+    "loop_contracts": {
+      "passed": 8,
+      "failed": 0
+    },
+    "independent_v021": {
+      "passed": 5,
+      "failed": 0
+    },
+    "independent_v023": {
+      "passed": 3,
+      "failed": 0
+    },
+    "legacy_r3": {
+      "passed": 8,
+      "failed": 0
+    },
+    "legacy_r4": {
+      "passed": 7,
+      "failed": 0
+    },
+    "legacy_death_boundary": {
+      "passed": 2,
+      "failed": 0
+    },
+    "product_js_syntax": {
+      "passed": 13,
+      "failed": 0
+    }
+  },
+  "countsOverlap": "npm checks and regression checks overlap; do not add them into a unique global test count.",
+  "tour": {
+    "tickA": 2020,
+    "tickB": 2020,
+    "modelSeconds": 67.33333333333333,
+    "completedNaturally": true,
+    "health": {
+      "page": [],
+      "console": []
+    }
+  },
+  "viewports": [
+    {
+      "width": 1440,
+      "height": 900,
+      "dpr": 2
+    },
+    {
+      "width": 390,
+      "height": 844,
+      "dpr": 2
+    },
+    {
+      "width": 844,
+      "height": 390,
+      "dpr": 2
+    }
+  ],
+  "legacyMatrix": {
+    "organScenarioCases": 32,
+    "modelSecondsEach": 60,
+    "exceptions": 0
+  },
+  "method": {
+    "node": "22.16.0",
+    "chromium": "144.0.7559.96",
+    "browserPlugin": "absent; regular Playwright fallback",
+    "navigation": "HTTP/file both ERR_BLOCKED_BY_ADMINISTRATOR; original resources loaded into about:blank memory page with real WebGL2/Xvfb",
+    "clock": "controlled original Main rAF; bulk iterations skip drawing; real renderer for interaction/screenshots",
+    "interactionCaveat": "Modal/file input used real DOM controls; modal-open branch switch and diagnostic entity context used supported Main API. Not all boundary fixtures are pointer-only E2E."
+  },
+  "harnessCorrections": [
+    "A historical observer diagnostic accessed a second-last point when only one point remained. Only the diagnostic report was guarded; assertions unchanged; initial output preserved.",
+    "Cross-version tests first received v0.3.0 as the old reference (same model). Re-run with actual incompatible v0.2/v0.2.2 archives; initial failed outputs preserved. Exit code alone was not taken as pass.",
+    "Some reused raw scripts retain historic version names in method strings/screenshots; final source manifests and this summary identify the tested candidate."
+  ],
+  "github": {
+    "profileLogin": "taipei49314",
+    "installedRepositorySearch": {
+      "query": "cellscape",
+      "results": []
+    },
+    "getRepo": {
+      "repository": "taipei49314/cellscape",
+      "status": 404,
+      "meaning": "not found or not accessible through this connection; does not establish nonexistence"
+    },
+    "connectorActions": "48 discovered actions: no create/commit/push write action",
+    "runtime": {
+      "ghInstalled": false,
+      "ghAuthFilePresent": false,
+      "githubCredentialEnvironmentPresent": false
+    },
+    "remoteWritePerformed": false,
+    "remoteStatus": "NOT_PUSHED"
+  },
+  "publisher": {
+    "localOnlyValidation": "package verification follows after bundle creation",
+    "mockTests": 4,
+    "remoteTested": false
+  },
+  "limitations": [
+    "No real HTTP deployment test",
+    "No physical-device FPS/thermal/endurance or cross-browser acceptance",
+    "No five-user study",
+    "No biological/clinical validation or full editorial source review",
+    "Gate C learning chapters and whole-body model not added",
+    "GitHub repository creation/push not executed"
+  ]
+}
