@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CELLSCAPE · Living Loop v0.2</title>
+<link rel="stylesheet" href="css/loop.css">
+</head>
+<body>
+<div id="r3d"></div>
+
+<header id="topbar2">
+  <a class="back" href="index.html">← 既有場景</a>
+  <span class="brand2">CELLSCAPE <em>LIVING LOOP v0.2</em></span>
+  <span id="modeBadge" class="badge">探索</span>
+  <span id="branchBadge" class="badge b" style="display:none">A 基線</span>
+  <span id="pauseNote" class="badge warn" style="display:none">頁籤隱藏：模型暫停（不追趕）</span>
+  <span class="grow"></span>
+  <span id="perfBadge" class="mono small"></span>
+  <span id="tickN" class="mono small"></span>
+  <span id="worldClock" class="mono">00:00</span>
+  <button id="btnPause2" class="btn2 icon">❚❚</button>
+  <span id="speedBox2">
+    <button class="btn2 spd" data-spd="0.5">0.5×</button>
+    <button class="btn2 spd on" data-spd="1">1×</button>
+    <button class="btn2 spd" data-spd="2">2×</button>
+    <button class="btn2 spd" data-spd="4">4×</button>
+  </span>
+</header>
+
+<aside id="evidencePanel" class="panel2 closed">
+  <div class="ph">事件記錄 <span class="hint">點事件可展開父鏈</span></div>
+  <div id="eventList" class="evlist"></div>
+  <div class="pf">
+    <label class="chk"><input type="checkbox" id="lowLoad"> 低負載模式</label>
+    <label class="chk"><input type="checkbox" id="reduced"> 減量動態</label>
+  </div>
+</aside>
+
+<aside id="inspector" class="panel2 closed">
+  <div class="ph">Atlas 檢閱<button id="insClose2" class="x">×</button></div>
+  <div id="insTitle" class="t">紅血球</div>
+  <div id="insRegion" class="mono small dim">—</div>
+  <div class="kv"><i>路徑進度</i><b id="insProg">—</b></div>
+  <div class="kv"><i>完成圈數</i><b id="insLoops">—</b></div>
+  <div class="kv"><i>氧負載 load</i><b id="insLoad">—</b></div>
+  <div class="meter"><span id="loadBar"></span></div>
+  <div class="note">load 為模型欄位（0–1 模型單位），非 SpO2。</div>
+  <input id="atlasSearch" type="search" placeholder="搜尋角色／問題（繁中・EN・RBC…）" autocomplete="off">
+  <nav id="atlasTabs" class="atabs">
+    <button data-tab="know" class="on">認識它</button>
+    <button data-tab="now">看此刻</button>
+    <button data-tab="mech">懂機制</button>
+    <button data-tab="src">查來源</button>
+  </nav>
+  <div id="atlasBody" class="abody"></div>
+  <button id="atlasSection" class="btn2 tiny wide2">🔬 肺泡交換剖面（示意）</button>
+</aside>
+
+<div id="xsecModal" class="modal hidden">
+  <div class="mbox">
+    <div class="ph">肺泡—毛細血管交換界面（結構示意）<button id="xsecClose" class="x">×</button></div>
+    <div id="xsecBody"></div>
+    <div class="note">結構示意・比例簡化・機制示意／非本次分子模擬。知識層的 AT2／巨噬示意不進入守恆帳與世界實體清單。</div>
+  </div>
+</div>
+
+<div id="paramPanel" class="panel2">
+  <div class="ph">模型參數（探索模式可調）</div>
+  <div class="prm"><label>肺端供氧 <b id="pv_lungSupply" class="mono">0.85</b></label>
+    <input type="range" data-key="lungSupply" min="0" max="1" step="0.01" value="0.85"></div>
+  <div class="prm"><label>循環流速 <b id="pv_flowSpeed" class="mono">1.00</b></label>
+    <input type="range" data-key="flowSpeed" min="0.2" max="3" step="0.05" value="1"></div>
+  <div class="prm"><label>組織需求 <b id="pv_tissueDemand" class="mono">0.50</b></label>
+    <input type="range" data-key="tissueDemand" min="0" max="1" step="0.01" value="0.5"></div>
+  <div class="prm stat"><i>肺泡水位</i><b id="statAlv" class="mono">—</b>
+    <i>組織水位</i><b id="statTis" class="mono">—</b>
+    <i>平均負載</i><b id="statMean" class="mono">—</b></div>
+  <div class="meter wide"><span id="tisBar"></span></div>
+  <div class="note">組織色階 = 組織氧庫存水位（模型欄位），非診斷影像。</div>
+</div>
+
+<div id="bottombar2">
+  <div id="subtitle"></div>
+  <div id="controls2">
+    <button id="abToggle" class="btn2" style="display:none">▶ 切到 A（基線）</button>
+    <button id="exploreBtn" class="btn2">自由探索</button>
+    <button id="camOverview" class="btn2 tiny">循環總覽</button>
+    <button id="camLung" class="btn2 tiny">肺微環境</button>
+    <button id="camTissue" class="btn2 tiny">組織交換</button>
+    <button id="evidenceToggle" class="btn2 tiny">事件記錄</button>
+    <button id="insToggle" class="btn2 tiny">檢閱</button>
+    <button id="btnExport" class="btn2 tiny">匯出 JSON</button>
+    <label class="btn2 tiny file">匯入 JSON<input type="file" id="fileImport" accept="application/json,.json"></label>
+  </div>
+</div>
+
+<div id="landing">
+  <div class="card">
+    <div class="t1">CELLSCAPE · LIVING LOOP</div>
+    <div class="t2">一個持續運作的循環世界：跟著同一顆紅血球，<br>
+      從肺微血管出發，經心臟與體循環，抵達組織，再回到肺。</div>
+    <button id="followBtn">◎ 跟著一顆紅血球</button>
+    <div class="t3">簡化供氧模型 · 內部數值為模型單位，非 SpO2／臨床數值<br>
+      導覽約 2–3 分鐘 · 可隨時中斷、自由探索、回放比較</div>
+  </div>
+</div>
+
+<script src="vendor/three.min.js"></script>
+<script src="js/loop/core.js"></script>
+<script src="js/loop/model.js"></script>
+<script src="js/loop/content.js"></script>
+<script src="js/loop/observe.js"></script>
+<script src="js/loop/render.js"></script>
+<script src="js/loop/tour.js"></script>
+<script src="js/loop/atlas.js"></script>
+<script src="js/loop/main.js"></script>
+</body>
+</html>
