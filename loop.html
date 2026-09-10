@@ -29,7 +29,7 @@
 </header>
 
 <aside id="evidencePanel" class="panel2 closed">
-  <div class="ph">事件記錄 <span class="hint">點事件可展開父鏈</span></div>
+  <div class="ph"><span data-i18n="panel.events">事件記錄</span> <span class="hint" data-i18n="hud.eventsHint">點事件可展開父鏈</span></div>
   <div id="eventList" class="evlist"></div>
   <div class="pf">
     <label class="chk"><input type="checkbox" id="lowLoad"> 低負載模式</label>
@@ -38,15 +38,15 @@
 </aside>
 
 <aside id="inspector" class="panel2 closed">
-  <div class="ph">Atlas 檢閱<button id="insClose2" class="x">×</button></div>
+  <div class="ph"><span data-i18n="hud.inspector">Atlas 檢閱</span><button id="insClose2" class="x">×</button></div>
   <div id="insTitle" class="t">紅血球</div>
   <div id="insRegion" class="mono small dim">—</div>
-  <div class="kv"><i>路徑進度</i><b id="insProg">—</b></div>
-  <div class="kv"><i>完成圈數</i><b id="insLoops">—</b></div>
-  <div class="kv"><i>氧負載 load</i><b id="insLoad">—</b></div>
+  <div class="kv"><i data-i18n="hud.pathProgress">路徑進度</i><b id="insProg">—</b></div>
+  <div class="kv"><i data-i18n="hud.loops">完成圈數</i><b id="insLoops">—</b></div>
+  <div class="kv"><i data-i18n="hud.o2load">氧負載 load</i><b id="insLoad">—</b></div>
   <div class="meter"><span id="loadBar"></span></div>
-  <div class="note">load 為模型欄位（0–1 模型單位），非 SpO2。</div>
-  <input id="atlasSearch" type="search" placeholder="搜尋角色／問題（繁中・EN・RBC…）" autocomplete="off">
+  <div class="note" data-i18n="hud.loadNote">load 為模型欄位（0–1 模型單位），非 SpO2。</div>
+  <input id="atlasSearch" type="search" placeholder="搜尋角色／問題（繁中・EN・RBC…）" data-i18n-placeholder="search.placeholder" autocomplete="off">
   <nav id="atlasTabs" class="atabs">
     <button data-tab="know" class="on" data-i18n="tab.know">認識它</button>
     <button data-tab="now" data-i18n="tab.now">看此刻</button>

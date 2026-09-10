@@ -163,8 +163,8 @@
         const s = CSL.Content.sources.find((x) => x.id === sid);
         return s ? `<a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer" class="srcChip" title="${esc(s.title)}">[${esc(s.id)}] ${esc(s.publisher)}</a>` : '';
       }).join(' ');
-      const impl = c.implRef ? `<div class="dim small">實作對照：${esc(c.implRef)}</div>` : '';
-      const limit = c.supportedLimit ? `<div class="dim small">適用限制：${esc(c.supportedLimit)}</div>` : '';
+      const impl = c.implRef ? `<div class="dim small">${esc(L('meta.impl', '實作對照'))}：${esc(c.implRef)}</div>` : '';
+      const limit = c.supportedLimit ? `<div class="dim small">${esc(L('meta.limit', '適用限制'))}：${esc(c.supportedLimit)}</div>` : '';
       const text = (CSL.I18n && CSL.I18n.claimText(claimId)) || c.text;   // C3：EN 覆蓋層，缺鍵回繁中
       return `<div class="claim"><div>${esc(text)}</div>
         <div class="meta"><span class="ctTag ct-${esc(c.contentType)}">${esc(CT_LABEL[c.contentType] || c.contentType)}</span>
@@ -198,7 +198,7 @@
             <div class="q">${esc(qLabel)}${i + 1}：${esc(qa.q)}</div>
             <div class="a">${esc(qa.a)}</div>
             <div class="claimLinks">${qa.claimIds.map((cid) =>
-              `<button class="srcChip" data-claim="${esc(cid)}">依據：${esc(cid)}</button>`).join(' ')}</div>
+              `<button class="srcChip" data-claim="${esc(cid)}">${esc(L('meta.basis', '依據'))}：${esc(cid)}</button>`).join(' ')}</div>
           </div>`).join('')}`;
     },
 
@@ -232,58 +232,67 @@
       for (const def of CSL.Content.readouts) ro[def.id] = CSL.Observe.readout(view, branchId, entityId, def.id);
 
       /* 白名單解說：位置／負載變化／可證明的交換 */
+      const NW = (k, vars) => (CSL.I18n ? CSL.I18n.now(k, vars) : null);
       let exchangeLine;
-      if (!e) exchangeLine = '尚未選取紅血球——點擊場景中的細胞，或使用「跟著一顆紅血球」。';
+      if (!e) exchangeLine = NW('noEntity') || '尚未選取紅血球——點擊場景中的細胞，或使用「跟著一顆紅血球」。';
       else if (edge && edge.exchange === 'lung') {
         const r = ro.flux_lung_rate;
-        if (r.state === 'ok' && r.value > 0) exchangeLine = `最近 3 模型秒實測到肺部裝載通量：約 ${RATE_FMT(r.value)} 模型單位／模型秒。`;
-        else if (r.state === 'ok') exchangeLine = '位於肺部交換區域；最近窗口內實測通量為零——不宣稱「正在裝載」。';
-        else exchangeLine = `位於肺部交換區域；觀察窗尚未取得（${r.have || 0}/${r.need} tick），不推測交換狀態。`;
+        if (r.state === 'ok' && r.value > 0) exchangeLine = NW('lungLoading', { rate: RATE_FMT(r.value) }) || `最近 3 模型秒實測到肺部裝載通量：約 ${RATE_FMT(r.value)} 模型單位／模型秒。`;
+        else if (r.state === 'ok') exchangeLine = NW('lungZero') || '位於肺部交換區域；最近窗口內實測通量為零——不宣稱「正在裝載」。';
+        else exchangeLine = NW('lungWindow', { have: r.have || 0, need: r.need }) || `位於肺部交換區域；觀察窗尚未取得（${r.have || 0}/${r.need} tick），不推測交換狀態。`;
       } else if (edge && edge.exchange === 'tissue') {
         const r = ro.flux_tissue_rate;
-        if (r.state === 'ok' && r.value > 0) exchangeLine = `最近 3 模型秒實測到組織卸載通量：約 ${RATE_FMT(r.value)} 模型單位／模型秒。`;
-        else if (r.state === 'ok') exchangeLine = '位於組織交換區域；最近窗口內實測通量為零——不宣稱「正在卸載」。';
-        else exchangeLine = `位於組織交換區域；觀察窗尚未取得（${r.have || 0}/${r.need} tick），不推測交換狀態。`;
-      } else if (edge) exchangeLine = `位於${edge.label}（非交換界面段）——此段無交換可證明。`;
+        if (r.state === 'ok' && r.value > 0) exchangeLine = NW('tissueUnloading', { rate: RATE_FMT(r.value) }) || `最近 3 模型秒實測到組織卸載通量：約 ${RATE_FMT(r.value)} 模型單位／模型秒。`;
+        else if (r.state === 'ok') exchangeLine = NW('tissueZero') || '位於組織交換區域；最近窗口內實測通量為零——不宣稱「正在卸載」。';
+        else exchangeLine = NW('tissueWindow', { have: r.have || 0, need: r.need }) || `位於組織交換區域；觀察窗尚未取得（${r.have || 0}/${r.need} tick），不推測交換狀態。`;
+      } else if (edge) exchangeLine = NW('nonExchange', { label: edge.label }) || `位於${edge.label}（非交換界面段）——此段無交換可證明。`;
 
       const change = CSL.Observe.recentChange(branchId, entityId);
-      const changeLine = change.state === 'missing'
-        ? '負載最近變化：資料不足（本實體樣本尚少）。'
-        : `負載最近變化（觀測 ${change.seconds.toFixed(1)} 模型秒）：${change.text}${change.delta != null ? '（' + (change.delta > 0 ? '+' : '') + change.delta.toFixed(3) + '）' : ''}。`;
+      const changeLine = (change.state === 'missing'
+        ? (NW('changeMissing') || '負載最近變化：資料不足（本實體樣本尚少）。')
+        : (NW('changeMeasured', { sec: change.seconds.toFixed(1), text: change.text, delta: change.delta != null ? '（' + (change.delta > 0 ? '+' : '') + change.delta.toFixed(3) + '）' : '' })
+          || `負載最近變化（觀測 ${change.seconds.toFixed(1)} 模型秒）：${change.text}${change.delta != null ? '（' + (change.delta > 0 ? '+' : '') + change.delta.toFixed(3) + '）' : ''}。`))
+        .replace('上升', 'rising').replace('下降', 'falling');   // change.text 方向詞來自 observe 資料值
       const cov = CSL.Observe.coverageSeconds(branchId, entityId);
       const covLine = cov == null
-        ? '觀察覆蓋：選取剛改變或剛匯入——本實體尚無歷史樣本（明示缺資料，不捏造曲線）。'
-        : `觀察覆蓋：窗口內已觀測約 ${cov.toFixed(1)} 模型秒（空窗不計入）。`;
+        ? (NW('covMissing') || '觀察覆蓋：選取剛改變或剛匯入——本實體尚無歷史樣本（明示缺資料，不捏造曲線）。')
+        : (NW('covMeasured', { sec: cov.toFixed(1) }) || `觀察覆蓋：窗口內已觀測約 ${cov.toFixed(1)} 模型秒（空窗不計入）。`);
       /* 卡片語境：看此刻永遠顯示「選取的模型實體」；知識卡未個別模擬（非阻塞觀察修復） */
       const activeCard = CSL.Content.cards.find((c) => c.id === this.activeCard);
       const cardNote = this.activeCard !== 'rbc' && activeCard
-        ? `<div class="note warn2">目前卡片「${esc(activeCard.name)}」為${esc(activeCard.capability === 'aggregate' ? '聚合近似' : '知識卡')}（本連動模式未個別模擬）；下方數值來自你選取的紅血球。</div>`
+        ? `<div class="note warn2">${esc(NW(activeCard.capability === 'aggregate' ? 'cardNoteAggregate' : 'cardNoteKnowledge', { name: activeCard.name })
+          || `目前卡片「${activeCard.name}」為${activeCard.capability === 'aggregate' ? '聚合近似' : '知識卡'}（本連動模式未個別模擬）；下方數值來自你選取的紅血球。`)}</div>`
         : '';
 
       const readoutRows = CSL.Content.readouts.map((def) => {
         const r = ro[def.id];
         let v;
         if (r.state === 'ok') v = def.unit.includes('%') ? pct(r.value) : RATE_FMT(r.value);
-        else if (r.state === 'missing-window') v = `<span class="missing">缺資料（窗口 ${r.have}/${r.need} tick）</span>`;
-        else if (r.state === 'no-entity') v = '<span class="missing">未選取實體</span>';
-        else v = '<span class="missing">缺資料</span>';
-        return `<div class="kv${def.def ? '' : ' ext'}"><i>${esc(def.name)}${def.unit.includes('模型秒') ? ' <span class="dim">（模型單位／模型秒）</span>' : ''}</i><b>${v}</b></div>`;
+        else if (r.state === 'missing-window') v = `<span class="missing">${esc(NW('roMissingWindow', { have: r.have, need: r.need }) || `缺資料（窗口 ${r.have}/${r.need} tick）`)}</span>`;
+        else if (r.state === 'no-entity') v = `<span class="missing">${esc(NW('roNoEntity') || '未選取實體')}</span>`;
+        else v = `<span class="missing">${esc(NW('roMissing') || '缺資料')}</span>`;
+        const rn = CSL.I18n ? CSL.I18n.readout(def.id) : { name: def.name };
+        return `<div class="kv${def.def ? '' : ' ext'}"><i>${esc(rn.name || def.name)}${def.unit.includes('模型秒') ? ' <span class="dim">（模型單位／模型秒）</span>' : ''}</i><b>${v}</b></div>`;
       }).join('');
 
-      const defList = CSL.Content.readouts.filter((d) => !d.def).map((d) =>
-        `<div class="dim tiny">${esc(d.name)}：${esc(d.formula)}（${esc(d.unit)}）</div>`).join('');
+      const defList = CSL.Content.readouts.filter((d) => !d.def).map((d) => {
+        const rn2 = CSL.I18n ? CSL.I18n.readout(d.id) : { name: d.name };
+        return `<div class="dim tiny">${esc(rn2.name || d.name)}：${esc(d.formula)}（${esc(d.unit)}）</div>`;
+      }).join('');
 
       return `
-        <div class="vc mono tiny">session #${vc.sessionEpoch} · 分支 ${esc(vc.branchId)} · run ${esc(vc.runId || '—')} · tick ${vc.tick} · 實體 ${vc.entityId == null ? '—' : '#' + vc.entityId}<br>
-          內容包 ${esc(vc.contentVersion)} · 觀察規則 ${esc(vc.observationVersion)}</div>
+        <div class="vc mono tiny">${esc(NW('vcLine', { session: vc.sessionEpoch, branch: vc.branchId, run: vc.runId || '—', tick: vc.tick, entity: vc.entityId == null ? '—' : '#' + vc.entityId })
+          || `session #${vc.sessionEpoch} · 分支 ${vc.branchId} · run ${vc.runId || '—'} · tick ${vc.tick} · 實體 ${vc.entityId == null ? '—' : '#' + vc.entityId}`)}<br>
+          ${esc(NW('vcLine2', { content: vc.contentVersion, obs: vc.observationVersion }) || `內容包 ${vc.contentVersion} · 觀察規則 ${vc.observationVersion}`)}</div>
         ${cardNote}
         <div class="nowLine">${esc(exchangeLine)}</div>
         <div class="nowLine dim">${esc(changeLine)}</div>
         <div class="nowLine dim">${esc(covLine)}</div>
         ${readoutRows}
-        <div class="note">顯示前三項為預設讀值；其餘三項展開顯示。${defList ? '<details><summary class="dim small">展開守恆帳與規則細節</summary>' + defList +
-          `<div class="dim tiny">守恆帳（每 30 tick 檢查，殘差 ≤1e-6）：初始 ${esc(String(view.ledger.initialTotal.toFixed(3)))}、累積輸入 ${esc(view.ledger.input.toFixed(3))}、使用 ${esc(view.ledger.usage.toFixed(3))}、呼出 ${esc(view.ledger.expelled.toFixed(3))}、最近殘差 ${esc(view.ledger.lastResidual.toExponential(2))}。</div></details>` : ''}</div>
-        <div class="note">這裡的百分比是相對模型容量，不是 SpO₂；速率以模型時間換算（dt = 1/30 模型秒）。</div>
+        <div class="note">${esc(NW('defaultsNote') || '顯示前三項為預設讀值；其餘三項展開顯示。')}${defList ? '<details><summary class="dim small">' + esc(NW('expandLedger') || '展開守恆帳與規則細節') + '</summary>' + defList +
+          `<div class="dim tiny">${esc(NW('ledgerLine', { initial: String(view.ledger.initialTotal.toFixed(3)), input: String(view.ledger.input.toFixed(3)), usage: String(view.ledger.usage.toFixed(3)), expelled: String(view.ledger.expelled.toFixed(3)), residual: view.ledger.lastResidual.toExponential(2) })
+            || `守恆帳（每 30 tick 檢查，殘差 ≤1e-6）：初始 ${view.ledger.initialTotal.toFixed(3)}、累積輸入 ${view.ledger.input.toFixed(3)}、使用 ${view.ledger.usage.toFixed(3)}、呼出 ${view.ledger.expelled.toFixed(3)}、最近殘差 ${view.ledger.lastResidual.toExponential(2)}。`)}</div></details>` : ''}</div>
+        <div class="note">${esc(NW('spo2Note') || '這裡的百分比是相對模型容量，不是 SpO₂；速率以模型時間換算（dt = 1/30 模型秒）。')}</div>
         <div class="chartBox"><canvas id="loadChart" width="10" height="10"></canvas>
           <div id="chartNote" class="dim tiny"></div></div>`;
     },
