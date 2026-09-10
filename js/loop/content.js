@@ -296,7 +296,7 @@
       'C-model-flowspeed':  { text: 'flowSpeed 等比縮放各邊跨越時間，不是心率或血壓。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/model.js baseTicks', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.4.0。' },
       'C-model-tissuedemand': { text: 'tissueDemand 同時作用於組織端交換與使用項，非單一真實生理量。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/core.js step() 組織交換與使用', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.4.0。' },
       'C-legacy-indep':   { text: '舊八場景（index.html）與本連動世界無共享模型狀態。', contentType: 'model_assumption', sourceIds: [], implRef: 'docs/LOOP-NOTES.md 執行節', reviewStatus: 'verified-implementation', supportedLimit: '架構邊界。' },
-      'C-model-co2':      { text: 'CO₂ 以 0–1 指數近似：組織隨使用量生產、肺端隨通氣排出；Bohr 效應以卸載倍率（0.75–1.35）近似。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/core.js co2 與 step() Bohr 項', reviewStatus: 'draft-pending', supportedLimit: 'MODEL_VERSION 0.4.0；模型指數，非臨床酸鹼值。' }
+      'C-model-co2':      { text: 'CO₂ 以 0–1 指數近似：組織隨使用量生產、肺端隨通氣排出；Bohr 效應以卸載倍率（0.75–1.35）近似。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/core.js co2 與 step() Bohr 項', reviewStatus: 'verified', supportedLimit: 'MODEL_VERSION 0.4.0；模型指數，非臨床酸鹼值。' }
     },
 
     /* 分類對應（示例）：exact/broader/related/unmapped，不捏造標準 ontology ID */
