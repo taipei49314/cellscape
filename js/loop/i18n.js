@@ -73,7 +73,19 @@
     return (get() === 'en' && E && E[key]) || null; /* EN only；殼層 zh 即 HTML 原文 */
   }
 
-  /* 把 data-i18n 元素換成 EN；切回 zh 時以 data-i18n-zh 還原 */
+  const isEn = () => get() === 'en';
+
+  /* 「看此刻」散文模板：EN 缺鍵回 null（呼叫端退回繁中原句） */
+  function now(key, vars) {
+    const E = en() && en().now;
+    if (!(get() === 'en' && E && E[key])) return null;
+    let s = E[key];
+    if (vars) for (const k of Object.keys(vars)) s = s.split('{' + k + '}').join(String(vars[k]));
+    return s;
+  }
+
+  /* 把 data-i18n 元素換成 EN；切回 zh 時以 data-i18n-zh 還原。
+     data-i18n-placeholder 元素改 placeholder 屬性（同樣記 zh 原值）。 */
   function applyShell(root) {
     if (!global.document) return;
     (root || global.document).querySelectorAll('[data-i18n]').forEach((el) => {
@@ -86,7 +98,17 @@
         el.textContent = el.getAttribute('data-i18n-zh');
       }
     });
+    (root || global.document).querySelectorAll('[data-i18n-placeholder]').forEach((el) => {
+      const k = el.getAttribute('data-i18n-placeholder');
+      if (!el.getAttribute('data-i18n-placeholder-zh')) el.setAttribute('data-i18n-placeholder-zh', el.getAttribute('placeholder') || '');
+      if (get() === 'en') {
+        const E = en() && en().shell;
+        if (E && E[k]) el.setAttribute('placeholder', E[k]);
+      } else {
+        el.setAttribute('placeholder', el.getAttribute('data-i18n-placeholder-zh'));
+      }
+    });
   }
 
-  CSL.I18n = { get, set, toggle, card, claimText, readout, cap, shell, applyShell, LOCALES };
+  CSL.I18n = { get, set, toggle, card, claimText, readout, cap, shell, now, isEn, applyShell, LOCALES };
 })(typeof window !== 'undefined' ? window : globalThis);

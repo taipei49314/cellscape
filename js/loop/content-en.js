@@ -41,7 +41,40 @@
       'inside.entry': '🔬 Cell interior (schematic)',
       'mech.knowledgeNote': 'This card is knowledge / structural background; exchanges in this linked world are approximated by aggregate rules (see the rules block on the red blood cell card).',
       'src.usage': 'Scope of use', 'src.assetNote': 'Asset notice', 'src.checked': 'Checked on',
+      'meta.impl': 'Implementation reference', 'meta.limit': 'Applicability limit', 'meta.basis': 'Basis',
+      'hud.inspector': 'Atlas inspector', 'hud.pathProgress': 'Path progress', 'hud.loops': 'Loops completed',
+      'hud.o2load': 'Oxygen load (load)', 'hud.loadNote': 'load is a model field (0–1 model units), not SpO₂.',
+      'hud.eventsHint': 'Click an event to expand its parent chain',
+      'search.placeholder': 'Search roles / questions (zh · EN · RBC…)',
       'src.warn': '“A source exists” does not mean “the claim is supported by that source” — biology_reference entries are editorial drafts (pending review); model_assumption entries are verified against this implementation.'
+    },
+
+    /* 「看此刻」觀察散文：{var} 佔位模板；語義契約逐句保留
+       （缺資料不冒充零、零通量不宣稱交換、未取得窗口不推測）。 */
+    now: {
+      noEntity: 'No red blood cell selected — click a cell in the scene, or use “Follow a red blood cell”.',
+      lungLoading: 'Measured lung loading flux over the last 3 model-seconds: ≈ {rate} model units / model-second.',
+      lungZero: 'In the lung exchange region; measured flux over the recent window was zero — no “loading” is claimed.',
+      lungWindow: 'In the lung exchange region; observation window not yet filled ({have}/{need} ticks) — exchange state is not guessed.',
+      tissueUnloading: 'Measured tissue unloading flux over the last 3 model-seconds: ≈ {rate} model units / model-second.',
+      tissueZero: 'In the tissue exchange region; measured flux over the recent window was zero — no “unloading” is claimed.',
+      tissueWindow: 'In the tissue exchange region; observation window not yet filled ({have}/{need} ticks) — exchange state is not guessed.',
+      nonExchange: 'On {label} (not an exchange segment) — no exchange is provable on this segment.',
+      changeMissing: 'Recent load change: insufficient data (few samples for this entity so far).',
+      changeMeasured: 'Recent load change (observed {sec} model-seconds): {text}{delta}.',
+      covMissing: 'Observation coverage: selection just changed or world just imported — no history samples for this entity yet (missing data is stated, not fabricated).',
+      covMeasured: 'Observation coverage: about {sec} model-seconds observed within the window (gaps excluded).',
+      cardNoteKnowledge: 'The current card “{name}” is a knowledge card (not individually simulated in this linked mode); the values below come from your selected red blood cell.',
+      cardNoteAggregate: 'The current card “{name}” is an aggregate approximation (not individually simulated in this linked mode); the values below come from your selected red blood cell.',
+      roMissingWindow: 'missing data (window {have}/{need} ticks)',
+      roNoEntity: 'no entity selected',
+      roMissing: 'missing data',
+      vcLine: 'session #{session} · branch {branch} · run {run} · tick {tick} · entity {entity}',
+      vcLine2: 'content pack {content} · observation rules {obs}',
+      defaultsNote: 'The first three rows are default readouts; the other three expand.',
+      expandLedger: 'Expand conservation ledger and rule details',
+      ledgerLine: 'Conservation ledger (checked every 30 ticks, residual ≤1e-6): initial {initial}, cumulative input {input}, usage {usage}, exhaled {expelled}, latest residual {residual}.',
+      spo2Note: 'Percentages here are relative to model capacity, not SpO₂; rates are converted in model time (dt = 1/30 model-seconds).'
     },
 
     capabilityLegend: {
