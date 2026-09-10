@@ -31,6 +31,7 @@
       CSL.Atlas.init();
       this._bind();
       this._syncParamsUI();
+      if (CSL.I18n) { CSL.I18n.applyShell(); this._syncLang(); }   // T-299 C3：還原已存語言
       this._setBranchBadge();
       this.setMode('explore');
       $('worldClock').textContent = this._clock();
@@ -216,11 +217,20 @@
             $('pv_' + key).textContent = Number(value).toFixed(2);
           }
           this.ensureBranch();
-          this.api.subtitle(preset.note, 6);
+          const noteKey = 'drug.note.' + el.dataset.preset;
+          this.api.subtitle((CSL.I18n && CSL.I18n.shell(noteKey)) || preset.note, 6);
         });
       });
       $('lowLoad').addEventListener('change', (e) => CSL.Render.setQuality(e.target.checked ? 'low' : 'high'));
       $('reduced').addEventListener('change', (e) => this._setReduced(e.target.checked));
+      /* T-299 C3：語言切換（content-en 平行層；缺鍵退回繁中；tour 字幕屬凍結檔維持繁中） */
+      $('langToggle').addEventListener('click', () => {
+        if (!CSL.I18n) return;
+        CSL.I18n.toggle();
+        CSL.I18n.applyShell();
+        this._syncLang();
+        CSL.Atlas.render();            // 檢閱內容若開啟即重繪；未開啟時 render 為安全無操作
+      });
       $('r3d').addEventListener('click', (e) => {
         const id = CSL.Render.pickAt(e.clientX, e.clientY, this.world);
         if (id != null) { this.selectedId = id; this._inspector(true); }
@@ -376,6 +386,10 @@
         el.value = this.world.params[key];
         $('pv_' + key).textContent = Number(this.world.params[key]).toFixed(2);
       }
+    },
+    _syncLang() {
+      const el = $('langToggle');
+      if (el && CSL.I18n) el.textContent = CSL.I18n.get() === 'en' ? '中文' : 'EN';
     },
     _perf(wallMs) {
       this._frames.push(wallMs * 1000);

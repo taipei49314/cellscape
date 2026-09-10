@@ -48,10 +48,10 @@
   <div class="note">load 為模型欄位（0–1 模型單位），非 SpO2。</div>
   <input id="atlasSearch" type="search" placeholder="搜尋角色／問題（繁中・EN・RBC…）" autocomplete="off">
   <nav id="atlasTabs" class="atabs">
-    <button data-tab="know" class="on">認識它</button>
-    <button data-tab="now">看此刻</button>
-    <button data-tab="mech">懂機制</button>
-    <button data-tab="src">查來源</button>
+    <button data-tab="know" class="on" data-i18n="tab.know">認識它</button>
+    <button data-tab="now" data-i18n="tab.now">看此刻</button>
+    <button data-tab="mech" data-i18n="tab.mech">懂機制</button>
+    <button data-tab="src" data-i18n="tab.src">查來源</button>
   </nav>
   <div id="atlasBody" class="abody"></div>
   <button id="atlasSection" class="btn2 tiny wide2">🔬 肺泡交換剖面（示意）</button>
@@ -66,52 +66,53 @@
 </div>
 
 <div id="paramPanel" class="panel2">
-  <div class="ph">模型參數（探索模式可調）</div>
-  <div class="prm"><label>肺端供氧 <b id="pv_lungSupply" class="mono">0.85</b></label>
+  <div class="ph" data-i18n="params.title">模型參數（探索模式可調）</div>
+  <div class="prm"><label><span data-i18n="params.lung">肺端供氧</span> <b id="pv_lungSupply" class="mono">0.85</b></label>
     <input type="range" data-key="lungSupply" min="0" max="1" step="0.01" value="0.85"></div>
-  <div class="prm"><label>循環流速 <b id="pv_flowSpeed" class="mono">1.00</b></label>
+  <div class="prm"><label><span data-i18n="params.flow">循環流速</span> <b id="pv_flowSpeed" class="mono">1.00</b></label>
     <input type="range" data-key="flowSpeed" min="0.2" max="3" step="0.05" value="1"></div>
-  <div class="prm"><label>組織需求 <b id="pv_tissueDemand" class="mono">0.50</b></label>
+  <div class="prm"><label><span data-i18n="params.demand">組織需求</span> <b id="pv_tissueDemand" class="mono">0.50</b></label>
     <input type="range" data-key="tissueDemand" min="0" max="1" step="0.01" value="0.5"></div>
   <div class="prm stat"><i>肺泡水位</i><b id="statAlv" class="mono">—</b>
     <i>組織水位</i><b id="statTis" class="mono">—</b>
     <i>平均負載</i><b id="statMean" class="mono">—</b></div>
   <div class="meter wide"><span id="tisBar"></span></div>
   <div class="prm drugs" id="drugPanel">
-    <label>藥物介入（模型預設，非用藥建議）</label>
+    <label data-i18n="drug.label">藥物介入（模型預設，非用藥建議）</label>
     <div class="drugRow">
-      <button type="button" class="btn2 tiny drug" data-preset="bronchodilator">支氣管擴張劑</button>
-      <button type="button" class="btn2 tiny drug" data-preset="betaBlocker">乙型阻斷劑</button>
-      <button type="button" class="btn2 tiny drug" data-preset="fever">敗血症（發燒）</button>
-      <button type="button" class="btn2 tiny drug" data-preset="baseline">回復基準</button>
+      <button type="button" class="btn2 tiny drug" data-preset="bronchodilator" data-i18n="drug.bronchodilator">支氣管擴張劑</button>
+      <button type="button" class="btn2 tiny drug" data-preset="betaBlocker" data-i18n="drug.betaBlocker">乙型阻斷劑</button>
+      <button type="button" class="btn2 tiny drug" data-preset="fever" data-i18n="drug.fever">敗血症（發燒）</button>
+      <button type="button" class="btn2 tiny drug" data-preset="baseline" data-i18n="drug.baseline">回復基準</button>
     </div>
   </div>
-  <div class="note">組織色階 = 組織氧庫存水位（模型欄位），非診斷影像。</div>
+  <div class="note" data-i18n="params.note">組織色階 = 組織氧庫存水位（模型欄位），非診斷影像。</div>
 </div>
 
 <div id="bottombar2">
   <div id="subtitle"></div>
   <div id="controls2">
     <button id="abToggle" class="btn2" style="display:none">▶ 切到 A（基線）</button>
-    <button id="exploreBtn" class="btn2">自由探索</button>
-    <button id="camOverview" class="btn2 tiny">循環總覽</button>
-    <button id="camLung" class="btn2 tiny">肺微環境</button>
-    <button id="camTissue" class="btn2 tiny">組織交換</button>
-    <button id="evidenceToggle" class="btn2 tiny">事件記錄</button>
-    <button id="insToggle" class="btn2 tiny">檢閱</button>
-    <button id="btnExport" class="btn2 tiny">匯出 JSON</button>
-    <label class="btn2 tiny file">匯入 JSON<input type="file" id="fileImport" accept="application/json,.json"></label>
+    <button id="exploreBtn" class="btn2" data-i18n="view.explore">自由探索</button>
+    <button id="camOverview" class="btn2 tiny" data-i18n="view.overview">循環總覽</button>
+    <button id="camLung" class="btn2 tiny" data-i18n="view.lung">肺微環境</button>
+    <button id="camTissue" class="btn2 tiny" data-i18n="view.tissue">組織交換</button>
+    <button id="evidenceToggle" class="btn2 tiny" data-i18n="panel.events">事件記錄</button>
+    <button id="insToggle" class="btn2 tiny" data-i18n="panel.inspector">檢閱</button>
+    <button id="btnExport" class="btn2 tiny" data-i18n="export">匯出 JSON</button>
+    <button id="langToggle" class="btn2 tiny" title="Language">EN</button>
+    <label class="btn2 tiny file"><span data-i18n="import">匯入 JSON</span><input type="file" id="fileImport" accept="application/json,.json"></label>
   </div>
 </div>
 
 <div id="landing">
   <div class="card">
     <div class="t1">CELLSCAPE · LIVING ATLAS</div>
-    <div class="t2">一個持續運作的循環世界：跟著同一顆紅血球，<br>
-      從肺微血管出發，經心臟與體循環，抵達組織，再回到肺。</div>
+    <div class="t2"><span data-i18n="landing.desc1">一個持續運作的循環世界：跟著同一顆紅血球，</span><br>
+      <span data-i18n="landing.desc2">從肺微血管出發，經心臟與體循環，抵達組織，再回到肺。</span></div>
     <button id="followBtn">◎ 跟著一顆紅血球</button>
-    <div class="t3">簡化供氧模型 · 內部數值為模型單位，非 SpO2／臨床數值<br>
-      導覽依模型條件推進 · 可隨時中斷、自由探索、回放比較</div>
+    <div class="t3"><span data-i18n="landing.note1">簡化供氧模型 · 內部數值為模型單位，非 SpO2／臨床數值</span><br>
+      <span data-i18n="landing.note2">導覽依模型條件推進 · 可隨時中斷、自由探索、回放比較</span></div>
   </div>
 </div>
 
@@ -119,6 +120,8 @@
 <script src="js/loop/core.js"></script>
 <script src="js/loop/model.js"></script>
 <script src="js/loop/content.js"></script>
+<script src="js/loop/content-en.js"></script>
+<script src="js/loop/i18n.js"></script>
 <script src="js/loop/observe.js"></script>
 <script src="js/loop/render.js"></script>
 <script src="js/loop/tour.js"></script>
