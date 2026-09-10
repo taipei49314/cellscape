@@ -15,7 +15,7 @@
      （MODEL_RULE_IDENTITY 契約）。
      0.2.2：digest 納入 eventSeq（DIGEST_SCOPE 修復）＋事件 kind 相依 payload
      深驗證。舊包之 digestChainTail 以舊正規化計算，無法跨版延續，故顯式拒絕。 */
-  CSL.MODEL_VERSION = '0.3.0';   /* 0.3.0：新增 anemia 參數（T-303 貧血刀；裝載上限閘，守恆帳結構不變） */
+  CSL.MODEL_VERSION = '0.4.0';   /* 0.4.0：新增 CO₂ 指數與 Bohr 卸載倍率（T-303；CO₂ 自帶生產/排出帳，O₂ 守恆帳結構不變） */
   CSL.SCHEMA_VERSION = 1;
   CSL.DT = 1 / 30;                 // 固定模型時間步（模型秒／tick）
 
@@ -67,12 +67,16 @@
         tissue: { stock: 10.0, capacity: 25 },  // 組織氧庫存（模型單位）
       },
       ledger: { initialTotal: 0, input: 0, usage: 0, expelled: 0, lastCheckTick: -1, lastResidual: 0 },
+      /* CO₂ 指數（0–1；0.4.0）：血液 CO₂ 相對量的聚合指標（非分子帳）。
+         基準點 0.30＝預設參數下的穩態；生產隨 O₂ 使用量，排出隨肺端通氣。 */
+      co2: { blood: 0.30, produced: 0, expelled: 0, retained: 0, lastCheckTick: -30, lastResidual: 0 },
       events: [], eventSeq: 1,
       actions: [],                             // 正式動作（command）記錄
       pendingCommands: [],                     // {tick, cmd}
       idSeq: 1,
       digestChain: [],                         // 每 tick 摘要（hex 字串）
       _tissueLow: false, _lastTissueLevel: null, _lastParamEvent: null,
+      _co2High: false, _lastCo2: null,
       _fluxLung: 0, _fluxTissue: 0,
     };
     /* 初始實體：沿循環均勻撒佈（模型 RNG 僅用於初始抖動） */
@@ -168,6 +172,8 @@
       f6(w.compartments.alveolar.stock) + '|' + f6(w.compartments.alveolar.capacity) + '|' +
       f6(w.compartments.tissue.stock) + '|' + f6(w.compartments.tissue.capacity) + '|' +
       (w._tissueLow ? 1 : 0) + '|' + f6(w._lastTissueLevel == null ? -1 : w._lastTissueLevel) + '|' +
+      (w._co2High ? 1 : 0) + '|' + f6(w._lastCo2 == null ? -1 : w._lastCo2) + '|' +
+      f6(w.co2.blood) + '|' + f6(w.co2.produced) + '|' + f6(w.co2.expelled) + '|' + f6(w.co2.retained) + '|' +
       (w._lastParamEvent ? w._lastParamEvent.eventId : 0) + '|' +
       w.eventSeq + '|' +
       JSON.stringify(w.pendingCommands) + '|';
@@ -239,8 +245,11 @@
         const tis = w.compartments.tissue;
         const level = tis.stock / tis.capacity;
         const demand = 0.5 + w.params.tissueDemand;
+        /* Bohr 效應近似（0.4.0）：血中 CO₂ 高 ⇒ 卸載更容易（曲線右移）；
+           倍率鉗位 [0.75, 1.35]，0.30 穩態時＝1（與 0.3.0 行為一致）。 */
+        const bohr = Math.min(1.35, Math.max(0.75, 1 + 0.8 * (w.co2.blood - 0.30)));
         let flux = Math.min(
-          CSL.K_TISSUE * Math.max(0, e.load - level) * demand,
+          CSL.K_TISSUE * Math.max(0, e.load - level) * demand * bohr,
           e.load, Math.max(0, tis.capacity - tis.stock)
         );
         e.load -= flux; tis.stock += flux;
@@ -253,6 +262,20 @@
     const usage = Math.min(tis.stock, CSL.K_USE * (0.5 + w.params.tissueDemand) * tLevel);
     tis.stock -= usage;
     w.ledger.usage += usage;
+
+    /* 5.5) CO₂ 指數（0.4.0）：組織隨 O₂ 使用量生產（呼吸商 0.8、尺度 4），
+       肺端隨通氣排出；0.30 為預設參數穩態。數值只影響 Bohr 卸載倍率與閾值
+       事件——不進入 O₂ 守恆帳。上限鉗位時差額記入 retained（保留於組織端，
+       未建模其返回）。 */
+    {
+      const inUnits = usage * 0.8 * 4;
+      const outUnits = w.co2.blood * 0.34 * w.params.lungSupply;
+      w.co2.blood += inUnits - outUnits;
+      w.co2.produced += inUnits;
+      w.co2.expelled += outUnits;
+      if (w.co2.blood > 1) { w.co2.retained += w.co2.blood - 1; w.co2.blood = 1; }
+      if (w.co2.blood < 0) w.co2.blood = 0;
+    }
 
     /* 6) 閾值事件（下游差異可追溯至引起參數變更的 command） */
     const low = tLevel < 0.25;
@@ -267,6 +290,26 @@
     }
     w._tissueLow = low;
     w._lastTissueLevel = tLevel;
+
+    /* CO₂ 閾值（遲滯：≥0.70 觸發、<0.60 解除）——模型指數警示，非臨床判讀 */
+    const co2High = w.co2.blood >= 0.70;
+    if (co2High && !w._co2High) {
+      CSL.emitEvent(w, {
+        kind: 'threshold', regionId: 'TISSUE_CAP', ruleId: 'co2BloodHigh',
+        before: { level: w._lastCo2 == null ? null : f6(w._lastCo2) },
+        after: { level: f6(w.co2.blood) },
+        note: 'co2-high',
+      });
+    }
+    w._co2High = co2High;
+    w._lastCo2 = w.co2.blood;
+
+    /* CO₂ 帳檢查（每 30 tick）：生產 − 排出 − 保留 ＝ 血中指數變化量 */
+    if (w.tick - w.co2.lastCheckTick >= 30) {
+      const cres = w.co2.produced - w.co2.expelled - w.co2.retained - (w.co2.blood - 0.30);
+      w.co2.lastResidual = cres;
+      w.co2.lastCheckTick = w.tick;
+    }
 
     /* 7) 守恆檢查（每 30 tick；殘差超出容差即為失敗，不得以截斷掩蓋） */
     if (w.tick - w.ledger.lastCheckTick >= 30) {
@@ -290,9 +333,11 @@
       tick: w.tick, rng: w.rng, params: w.params,
       entities: w.entities, compartments: w.compartments,
       ledger: w.ledger, actions: w.actions,
+      co2: w.co2,
       events: w.events, eventSeq: w.eventSeq,
       pendingCommands: w.pendingCommands, idSeq: w.idSeq,
       tissueLow: !!w._tissueLow, lastTissueLevel: w._lastTissueLevel == null ? null : w._lastTissueLevel,
+      co2High: !!w._co2High, lastCo2: w._lastCo2 == null ? null : w._lastCo2,
       lastParamEvent: w._lastParamEvent || null,
       digestChainTail: w.digestChain.slice(-64),
     }));
@@ -308,6 +353,8 @@
     if (snap.dt !== CSL.DT) return 'dt-mismatch: ' + snap.dt;
     if (typeof snap.tick !== 'number' || snap.tick < 0 || !Number.isInteger(snap.tick)) return 'bad-tick';
     if (!isFinNum(snap.rng)) return 'bad-rng-state';
+    if (!snap.co2 || !isFinNum(snap.co2.blood) || snap.co2.blood < 0 || snap.co2.blood > 1) return 'bad-co2';
+    for (const k of ['produced', 'expelled', 'retained']) if (!isFinNum(snap.co2[k])) return 'bad-co2: ' + k;
     /* 參數：存在、有限、於宣告界限內 */
     if (!snap.params || typeof snap.params !== 'object') return 'bad-params';
     for (const key in PARAM_LIMITS) {
@@ -416,6 +463,9 @@
     w.rng = snap.rng; w.params = snap.params;
     w.entities = snap.entities; w.compartments = snap.compartments;
     w.ledger = snap.ledger; w.actions = snap.actions;
+    w.co2 = snap.co2 || { blood: 0.30, produced: 0, expelled: 0, retained: 0, lastCheckTick: -30, lastResidual: 0 };
+    w._co2High = !!snap.co2High;
+    w._lastCo2 = snap.lastCo2 === undefined ? null : snap.lastCo2;
     w.pendingCommands = snap.pendingCommands || [];
     w.idSeq = snap.idSeq; w.eventSeq = snap.eventSeq;
     if (snap.events) w.events = snap.events;
@@ -441,6 +491,7 @@
       },
       entities: w.entities,
       compartments: w.compartments,
+      co2: w.co2,
       ledger: w.ledger,
       actions: w.actions,
       events: w.events,

@@ -117,6 +117,10 @@
         const c = w.compartments.alveolar;
         return { id: selectorId, value: c.capacity > 0 ? c.stock / c.capacity : null, state: 'ok' };
       }
+      if (selectorId === 'co2_blood') {
+        if (!w.co2 || !isFinite(w.co2.blood)) return { id: selectorId, value: null, state: 'missing' };
+        return { id: selectorId, value: w.co2.blood, state: 'ok' };
+      }
       return { id: selectorId, value: null, state: 'unknown-selector' };
     },
 
