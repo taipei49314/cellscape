@@ -75,7 +75,8 @@
       defaultsNote: 'The first three rows are default readouts; the other three expand.',
       expandLedger: 'Expand conservation ledger and rule details',
       ledgerLine: 'Conservation ledger (checked every 30 ticks, residual ≤1e-6): initial {initial}, cumulative input {input}, usage {usage}, exhaled {expelled}, latest residual {residual}.',
-      spo2Note: 'Percentages here are relative to model capacity, not SpO₂; rates are converted in model time (dt = 1/30 model-seconds).'
+      spo2Note: 'Percentages here are relative to model capacity, not SpO₂; rates are converted in model time (dt = 1/30 model-seconds).',
+      phLine: 'Blood CO₂ index {co2} · model pH index {ph} — model indices, not clinical values.'
     },
 
     capabilityLegend: {
@@ -92,7 +93,8 @@
       flux_tissue_rate: { name: 'Delivery rate (RBC → tissue)', note: 'Window N=90 ticks (3 model-seconds); shown only with a full window.' },
       alveolar_level:   { name: 'Alveolar stock level', note: '' },
       flux_lung_rate:   { name: 'Lung loading rate (alveolus → RBC)', note: 'Window N=90 ticks; shown only with a full window.' },
-      usage_rate:       { name: 'Tissue usage rate', note: 'Differenced from the cumulative usage ledger; requires a full window.' }
+      usage_rate:       { name: 'Tissue usage rate', note: 'Differenced from the cumulative usage ledger; requires a full window.' },
+      co2_blood:        { name: 'Blood CO₂ index', note: 'Aggregate model index — not blood acidity or a clinical measurement.' }
     },
 
     /* 主張登錄的英文對照（鍵與 content.js claims 一一對應） */

@@ -28,8 +28,8 @@ const run = (s) => vm.runInContext(s, c, { timeout: 60000 });
       if (!cl) { claimsOk = false; continue; }
       for (const sid of (cl.sourceIds||[])) if (!C.sources.find(s=>s.id===sid)) sourcesOk = false;
     }
-    const roOk = C.readouts.length===6 && C.readouts.filter(r=>r.def).length===3
-      && new Set(C.readouts.map(r=>r.id)).size===6;
+    const roOk = C.readouts.length===7 && C.readouts.filter(r=>r.def).length===3
+      && new Set(C.readouts.map(r=>r.id)).size===7;
     const pureData = JSON.stringify(JSON.parse(JSON.stringify(C)))===JSON.stringify(C);
     const modelAssumptionOk = Object.values(C.claims).every(cl =>
       cl.contentType!=='model_assumption' || cl.implRef);
