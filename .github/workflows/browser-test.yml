@@ -62,10 +62,5 @@ jobs:
             Remove-Item $f -ErrorAction SilentlyContinue
           }
 
-      - name: Upload perf receipt
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: perf-latest
-          path: docs/verification/perf-latest.json
-          if-no-files-found: ignore
+      # 效能收據 perf-latest.json 留在 runner workspace 並全文見 step log；
+      # 不上傳 artifact——帳號 artifact 配額已滿（T-194 同源問題），上傳必失敗。
