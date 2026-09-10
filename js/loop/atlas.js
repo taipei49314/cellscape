@@ -27,6 +27,7 @@
     unresolved: '依據不足'
   };
   const RS_LABEL = {
+    'verified': '已審核（人類裁定）',
     'draft-pending': '編輯草稿・待審',
     'verified-implementation': '已對照本版實作核對'
   };
