@@ -34,7 +34,12 @@ const check = (name, pass, detail) => {
   const page = await ctx.newPage();
   const pageErrors = [];
   page.on('pageerror', (e) => pageErrors.push(String(e)));
-  page.on('console', (m) => { if (m.type() === 'error') pageErrors.push('console: ' + m.text()); });
+  page.on('console', (m) => {
+    if (m.type() !== 'error') return;
+    const url = (m.location() && m.location().url) || '';
+    if (/favicon/i.test(url)) return;   // 瀏覽器自動請求 favicon 的 404 屬良性噪聲
+    pageErrors.push('console: ' + m.text());
+  });
 
   /* ---------- loop.html ---------- */
   await page.goto(BASE + '/loop.html');
@@ -79,7 +84,7 @@ const check = (name, pass, detail) => {
   check('index-loads', /CELLSCAPE/i.test(await page.title()));
   check('index-no-errors', pageErrors.length === 0, pageErrors.join(' | '));
 
-  await browser.close();
+  await browser.close().catch(() => {});   // 關閉競態不影響判定
   const fails = results.filter((r) => !r.pass).length;
   console.log(fails === 0 ? 'BROWSER ACCEPTANCE: ALL ' + results.length + ' PASS' : fails + ' FAILURES');
   process.exit(fails === 0 ? 0 : 1);

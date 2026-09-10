@@ -57,7 +57,7 @@ const SAMPLE_MS = 8000;
     const m = document.body.innerText.match(/tick (\d+)/);
     return m ? Number(m[1]) : 0;
   });
-  await browser.close();
+  await browser.close().catch(() => {});   // 關閉競態不影響判定
 
   const out = {
     kind: 'cellscape-perf-baseline',
