@@ -170,6 +170,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
   background:linear-gradient(160deg,rgba(10,26,38,.98),rgba(6,16,24,.98));
   border:1px solid rgba(140,190,215,.35);border-radius:14px;padding:12px 14px;box-shadow:0 18px 60px rgba(0,0,0,.6)}
 .modal svg{width:100%;height:auto}
+/* T-299 C4：細胞內部示意（inside.js 自建 modal） */
+.insideBody .insidePart{margin:7px 0;padding-bottom:6px;border-bottom:1px dashed rgba(140,190,215,.18)}
+.insideBody .insidePart b{color:var(--accent)}
+.insideBody svg .it{font-size:11px;fill:#cfe2ee}
+.insideBody svg .it.warn{fill:#e8b06a}
+.insideBody svg text{font-family:inherit}
 details{margin:4px 0}
 details summary{cursor:pointer}
 @media (max-height:500px){ /* 矮幕：Atlas 面板同樣受限 */

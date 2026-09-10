@@ -181,6 +181,7 @@
           <h3>${esc(card.name)} <span class="dim small">${esc(card.en)}</span></h3>
           <p class="headline">${esc(card.headline)}</p>
           <ul class="kps">${card.keyPoints.map((k) => `<li>${esc(k)}</li>`).join('')}</ul>
+          <button id="insideBtn" class="btn2 tiny" data-card="${esc(card.id)}">🔬 細胞內部（示意）</button>
           ${card.capabilityNote ? `<div class="note">${esc(card.capabilityNote)}</div>` : ''}
           ${live}
         </div>
