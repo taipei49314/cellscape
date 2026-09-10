@@ -196,6 +196,29 @@
           if (key === 'lungSupply') this.ensureBranch();   // 首次介入建立 A/B
         });
       });
+      /* 藥物介入快速預設：與滑桿同一 setParam 事件路徑（CSL.queueCommand 唯一入口），
+         模型單位、非用藥建議；介入即建立 A/B 基線（首次介入語義同 lungSupply 滑桿）。 */
+      const DRUG_PRESETS = {
+        bronchodilator: { params: { lungSupply: 1 }, note: '藥物介入（模型）：支氣管擴張劑——肺端供氧升至 1.00。模型單位，非用藥建議。' },
+        betaBlocker: { params: { flowSpeed: 0.6 }, note: '藥物介入（模型）：乙型阻斷劑——循環流速降至 0.60。模型單位，非用藥建議。' },
+        fever: { params: { tissueDemand: 0.85 }, note: '藥物介入（模型）：發燒／敗血症——組織需求升至 0.85。模型單位，非用藥建議。' },
+        baseline: { params: { lungSupply: 0.85, flowSpeed: 1, tissueDemand: 0.5 }, note: '藥物介入（模型）：參數回復基準值。' },
+      };
+      document.querySelectorAll('#drugPanel .drug').forEach((el) => {
+        el.addEventListener('click', () => {
+          const preset = DRUG_PRESETS[el.dataset.preset];
+          if (!preset) return;
+          for (const [key, value] of Object.entries(preset.params)) {
+            CSL.queueCommand(this.world, { kind: 'setParam', key, value, source: 'user' });
+            /* 指令下一 tick 才套用且 _tickUI 不同步滑桿——比照滑桿 input 先寫顯示值 */
+            const input = document.querySelector(`#paramPanel input[data-key=${key}]`);
+            if (input) input.value = value;
+            $('pv_' + key).textContent = Number(value).toFixed(2);
+          }
+          this.ensureBranch();
+          this.api.subtitle(preset.note, 6);
+        });
+      });
       $('lowLoad').addEventListener('change', (e) => CSL.Render.setQuality(e.target.checked ? 'low' : 'high'));
       $('reduced').addEventListener('change', (e) => this._setReduced(e.target.checked));
       $('r3d').addEventListener('click', (e) => {
