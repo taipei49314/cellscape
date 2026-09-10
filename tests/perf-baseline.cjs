@@ -8,10 +8,26 @@ const path = require('node:path');
 const { chromium } = require('playwright');
 
 const BASE = process.env.BASE_URL || 'http://127.0.0.1:8643';
+
+/* pool 主機以既有 Edge/Chrome channel 啟動（不下載瀏覽器）；
+   全部失敗才退回 playwright 預設 chromium。 */
+async function launchBrowser() {
+  const attempts = [
+    { channel: 'msedge', headless: true },
+    { channel: 'chrome', headless: true },
+    { headless: true },
+  ];
+  let lastErr;
+  for (const opt of attempts) {
+    try { return await chromium.launch(opt); }
+    catch (e) { lastErr = e; }
+  }
+  throw lastErr;
+}
 const SAMPLE_MS = 8000;
 
 (async () => {
-  const browser = await chromium.launch({ channel: 'chromium' })   // 用完整 chromium 的無頭模式（主機快取缺 headless shell）;
+  const browser = await launchBrowser();
   const page = await (await browser.newContext({ viewport: { width: 1280, height: 800 } })).newPage();
   const pageErrors = [];
   page.on('pageerror', (e) => pageErrors.push(String(e)));

@@ -28,11 +28,9 @@ jobs:
         with:
           node-version: 22
 
-      - name: Install playwright (workspace-local; browsers cached per host)
+      - name: Install playwright driver (workspace-local; browser = host Edge/Chrome channel)
         shell: cmd
-        run: |
-          npm install --no-save playwright@1.49.0
-          npx playwright install chromium
+        run: npm install --no-save playwright@1.49.0
 
       - name: Start static server (port 8643)
         shell: powershell
