@@ -57,7 +57,9 @@ const SAMPLE_MS = 8000;
     const m = document.body.innerText.match(/tick (\d+)/);
     return m ? Number(m[1]) : 0;
   });
-  await browser.close().catch(() => {});   // 關閉競態不影響判定
+  // close-time 競態：Playwright 內部 navigation reject 不影響已完成的判定
+  process.on('unhandledRejection', (e) => console.error('non-fatal unhandledRejection at close:', String(e)));
+  await browser.close().catch(() => {});
 
   const out = {
     kind: 'cellscape-perf-baseline',

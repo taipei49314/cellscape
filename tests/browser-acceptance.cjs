@@ -84,7 +84,9 @@ const check = (name, pass, detail) => {
   check('index-loads', /CELLSCAPE/i.test(await page.title()));
   check('index-no-errors', pageErrors.length === 0, pageErrors.join(' | '));
 
-  await browser.close().catch(() => {});   // 關閉競態不影響判定
+  // close-time 競態：Playwright 內部 navigation reject 不影響已完成的判定
+  process.on('unhandledRejection', (e) => console.error('non-fatal unhandledRejection at close:', String(e)));
+  await browser.close().catch(() => {});
   const fails = results.filter((r) => !r.pass).length;
   console.log(fails === 0 ? 'BROWSER ACCEPTANCE: ALL ' + results.length + ' PASS' : fails + ' FAILURES');
   process.exit(fails === 0 ? 0 : 1);
