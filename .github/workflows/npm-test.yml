@@ -1,0 +1,34 @@
+name: npm test
+run-name: npm test @ ${{ github.ref_name }}
+
+# T-299（EC 帳本）：cellscape 的最小 pool 測試 workflow。
+# 只跑隨包零依賴的 scripts/test.cjs（Atlas 8＋Loop 7＋觀察邊界 4）；
+# 不安裝 npm 依賴、不做瀏覽器驗收、不算完整產品驗證。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-test-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  npm-test:
+    runs-on: [self-hosted, Windows, X64, ci-box]
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show node version
+        shell: cmd
+        run: node --version
+
+      - name: node scripts/test.cjs
+        shell: cmd
+        run: node scripts\test.cjs
