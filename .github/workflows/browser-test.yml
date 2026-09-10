@@ -1,0 +1,73 @@
+name: browser acceptance
+run-name: browser acceptance @ ${{ github.ref_name }}
+
+# T-303 刀 1.2/1.3：pool 上的自動化瀏覽器驗收＋效能基準。
+# 效能數字是軟體渲染下的相對回歸基準，不是實機效能宣稱。
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: browser-test-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  browser-acceptance:
+    runs-on: [self-hosted, Windows, X64, ci-box]
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install playwright (workspace-local; browsers cached per host)
+        shell: cmd
+        run: |
+          npm install --no-save playwright@1.49.0
+          npx playwright install chromium
+
+      - name: Start static server (port 8643)
+        shell: powershell
+        run: |
+          $p = Start-Process -FilePath python -ArgumentList '-m','http.server','8643','--bind','127.0.0.1' -WorkingDirectory $env:GITHUB_WORKSPACE -WindowStyle Hidden -PassThru
+          $p.Id | Out-File -Encoding ascii "$env:GITHUB_WORKSPACE\.server.pid"
+          Start-Sleep -Seconds 2
+
+      - name: Browser acceptance (README walkthrough assertions)
+        shell: cmd
+        env:
+          BASE_URL: http://127.0.0.1:8643
+        run: node tests\browser-acceptance.cjs
+
+      - name: Performance baseline (relative regression numbers)
+        shell: cmd
+        env:
+          BASE_URL: http://127.0.0.1:8643
+        run: node tests\perf-baseline.cjs
+
+      - name: Stop static server
+        if: always()
+        shell: powershell
+        run: |
+          $f = "$env:GITHUB_WORKSPACE\.server.pid"
+          if (Test-Path $f) {
+            $id = Get-Content $f
+            Stop-Process -Id $id -Force -ErrorAction SilentlyContinue
+            Remove-Item $f -ErrorAction SilentlyContinue
+          }
+
+      - name: Upload perf receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-latest
+          path: docs/verification/perf-latest.json
+          if-no-files-found: ignore
