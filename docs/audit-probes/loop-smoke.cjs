@@ -22,7 +22,7 @@ const check = (name, pass, detail) => { results.push({ name, pass, detail }); };
 {
   const c = freshEnv();
   const v = run(c, `CSL.MODEL_VERSION`);
-  check('MODEL_VERSION=0.2.2', v === '0.2.2', `got ${v}`);
+  check('MODEL_VERSION=0.3.0', v === '0.3.0', `got ${v}`);
 }
 
 // 2+3. 實體數固定 48、ID 唯一、600 tick 守恆殘差 ≤ 1e-6、每 tick 每 ID 唯一所在
@@ -100,7 +100,7 @@ const check = (name, pass, detail) => { results.push({ name, pass, detail }); };
     CSL.queueCommand(w, { kind: 'setParam', key: 'flowSpeed', value: 1.5, source: 'user' });
     for (let i = 0; i < 5; i++) CSL.step(w);   // command 到期 ⇒ 產生 command 事件
     const pack = CSL.exportRun(w);   // 已是 JSON 字串
-    const old = pack.replace('"modelVersion":"0.2.2"', '"modelVersion":"0.2.1"');
+    const old = pack.replace('"modelVersion":"' + CSL.MODEL_VERSION + '"', '"modelVersion":"0.1.0"');   // 動態取當前版本：任意相異版本都必須被拒
     const results = {};
     try { CSL.importRun(old); results.oldRejected = false; }
     catch (e) { results.oldRejected = /IMPORT_REJECTED/.test(String(e)); }

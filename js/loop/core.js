@@ -15,7 +15,7 @@
      （MODEL_RULE_IDENTITY 契約）。
      0.2.2：digest 納入 eventSeq（DIGEST_SCOPE 修復）＋事件 kind 相依 payload
      深驗證。舊包之 digestChainTail 以舊正規化計算，無法跨版延續，故顯式拒絕。 */
-  CSL.MODEL_VERSION = '0.2.2';
+  CSL.MODEL_VERSION = '0.3.0';   /* 0.3.0：新增 anemia 參數（T-303 貧血刀；裝載上限閘，守恆帳結構不變） */
   CSL.SCHEMA_VERSION = 1;
   CSL.DT = 1 / 30;                 // 固定模型時間步（模型秒／tick）
 
@@ -60,7 +60,7 @@
       branchOf: opts.branchOf || null,
       tick: 0,
       rng: new Rng(seed).getState(),          // 模型 RNG 狀態（唯一；視覺 RNG 在渲染層）
-      params: { lungSupply: 0.85, flowSpeed: 1.0, tissueDemand: 0.5 },
+      params: { lungSupply: 0.85, flowSpeed: 1.0, tissueDemand: 0.5, anemia: 0 },
       entities: {},                            // id → {id, kind:'rbc', edge, s, load, cap, loops}
       compartments: {
         alveolar: { stock: 6.0, capacity: 40 }, // 肺泡側氧庫存（模型單位）
@@ -141,7 +141,7 @@
     const cmd = entry.cmd;
     if (cmd.kind === 'setParam') {
       const key = cmd.key;
-      const limits = { lungSupply: [0, 1], tissueDemand: [0, 1], flowSpeed: [0.2, 3] };
+      const limits = { lungSupply: [0, 1], tissueDemand: [0, 1], flowSpeed: [0.2, 3], anemia: [0, 0.9] };
       if (!(key in limits)) return;
       const v = Math.min(limits[key][1], Math.max(limits[key][0], Number(cmd.value)));
       const before = w.params[key];
@@ -225,7 +225,10 @@
       const curEdge = CSL.EDGES[e.edge];
       if (curEdge.exchange === 'lung') {
         const level = alv.stock / alv.capacity;
-        const avail = e.cap - e.load;
+        /* 貧血（T-303）：可用 Hb 上限 = 1 − anemia，只閘肺端裝載；
+           不回溯調整既有負載（已攜帶者照常在組織卸載），守恆帳結構不變。 */
+        const eCap = (1 - w.params.anemia) * e.cap;
+        const avail = eCap - e.load;
         let flux = Math.min(
           CSL.K_LUNG * Math.max(0, level - e.load) * w.params.lungSupply,
           alv.stock, Math.max(0, avail)
@@ -294,7 +297,7 @@
       digestChainTail: w.digestChain.slice(-64),
     }));
   };
-  const PARAM_LIMITS = { lungSupply: [0, 1], tissueDemand: [0, 1], flowSpeed: [0.2, 3] };
+  const PARAM_LIMITS = { lungSupply: [0, 1], tissueDemand: [0, 1], flowSpeed: [0.2, 3], anemia: [0, 0.9] };
   CSL.PARAM_LIMITS = PARAM_LIMITS;
   const isFinNum = (v) => typeof v === 'number' && isFinite(v);
 
