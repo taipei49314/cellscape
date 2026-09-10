@@ -15,7 +15,7 @@
      （MODEL_RULE_IDENTITY 契約）。
      0.2.2：digest 納入 eventSeq（DIGEST_SCOPE 修復）＋事件 kind 相依 payload
      深驗證。舊包之 digestChainTail 以舊正規化計算，無法跨版延續，故顯式拒絕。 */
-  CSL.MODEL_VERSION = '0.4.0';   /* 0.4.0：新增 CO₂ 指數與 Bohr 卸載倍率（T-303；CO₂ 自帶生產/排出帳，O₂ 守恆帳結構不變） */
+  CSL.MODEL_VERSION = '0.5.0';   /* 0.5.0：新增 temperature 參數（T-303 體溫刀；O₂ 使用量乘 Q10 因子，守恆帳結構不變） */
   CSL.SCHEMA_VERSION = 1;
   CSL.DT = 1 / 30;                 // 固定模型時間步（模型秒／tick）
 
@@ -60,7 +60,7 @@
       branchOf: opts.branchOf || null,
       tick: 0,
       rng: new Rng(seed).getState(),          // 模型 RNG 狀態（唯一；視覺 RNG 在渲染層）
-      params: { lungSupply: 0.85, flowSpeed: 1.0, tissueDemand: 0.5, anemia: 0 },
+      params: { lungSupply: 0.85, flowSpeed: 1.0, tissueDemand: 0.5, anemia: 0, temperature: 37.0 },
       entities: {},                            // id → {id, kind:'rbc', edge, s, load, cap, loops}
       compartments: {
         alveolar: { stock: 6.0, capacity: 40 }, // 肺泡側氧庫存（模型單位）
@@ -145,7 +145,7 @@
     const cmd = entry.cmd;
     if (cmd.kind === 'setParam') {
       const key = cmd.key;
-      const limits = { lungSupply: [0, 1], tissueDemand: [0, 1], flowSpeed: [0.2, 3], anemia: [0, 0.9] };
+      const limits = { lungSupply: [0, 1], tissueDemand: [0, 1], flowSpeed: [0.2, 3], anemia: [0, 0.9], temperature: [36, 41] };
       if (!(key in limits)) return;
       const v = Math.min(limits[key][1], Math.max(limits[key][0], Number(cmd.value)));
       const before = w.params[key];
@@ -259,7 +259,10 @@
     /* 5) 組織使用（由庫存水位與需求參數決定；無庫存即無使用——不得偽造消耗） */
     const tis = w.compartments.tissue;
     const tLevel = tis.stock / tis.capacity;
-    const usage = Math.min(tis.stock, CSL.K_USE * (0.5 + w.params.tissueDemand) * tLevel);
+    /* 體溫（0.5.0）：O₂ 使用量乘 Q10 因子（2^((T−37)/10)）；37°C＝1（與 0.4.0 行為一致）。
+       CO₂ 生產隨使用量自動連動（Bohr 同向反應）。 */
+    const q10 = Math.pow(2, (w.params.temperature - 37) / 10);
+    const usage = Math.min(tis.stock, CSL.K_USE * (0.5 + w.params.tissueDemand) * tLevel * q10);
     tis.stock -= usage;
     w.ledger.usage += usage;
 
@@ -342,7 +345,7 @@
       digestChainTail: w.digestChain.slice(-64),
     }));
   };
-  const PARAM_LIMITS = { lungSupply: [0, 1], tissueDemand: [0, 1], flowSpeed: [0.2, 3], anemia: [0, 0.9] };
+  const PARAM_LIMITS = { lungSupply: [0, 1], tissueDemand: [0, 1], flowSpeed: [0.2, 3], anemia: [0, 0.9], temperature: [36, 41] };
   CSL.PARAM_LIMITS = PARAM_LIMITS;
   const isFinNum = (v) => typeof v === 'number' && isFinite(v);
 
