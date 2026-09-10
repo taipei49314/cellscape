@@ -25,6 +25,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # runner 使用者 PATH 無 node（首次跑動 34481588319 實測）；
+      # 以 setup-node 裝在 runner tool cache，釘 22.x 對齊 FINAL-REVIEW 的 22.16 基線，不動系統。
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
       - name: Show node version
         shell: cmd
         run: node --version
