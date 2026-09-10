@@ -202,8 +202,9 @@
       const DRUG_PRESETS = {
         bronchodilator: { params: { lungSupply: 1 }, note: '藥物介入（模型）：支氣管擴張劑——肺端供氧升至 1.00。模型單位，非用藥建議。' },
         betaBlocker: { params: { flowSpeed: 0.6 }, note: '藥物介入（模型）：乙型阻斷劑——循環流速降至 0.60。模型單位，非用藥建議。' },
-        fever: { params: { tissueDemand: 0.85 }, note: '藥物介入（模型）：發燒／敗血症——組織需求升至 0.85。模型單位，非用藥建議。' },
+        fever: { params: { tissueDemand: 0.85, temperature: 39.5 }, note: '藥物介入（模型）：發燒／敗血症——組織需求升至 0.85、體溫升至 39.5 °C（Q10 使使用與 CO₂ 連動上升）。模型單位，非用藥建議。' },
         transfusion: { params: { anemia: 0 }, note: '藥物介入（模型）：輸血——貧血程度歸零（Hb 可用上限恢復）。模型單位，非用藥建議。' },
+        antipyretic: { params: { temperature: 37 }, note: '藥物介入（模型）：退燒——體溫回復 37.0 °C。模型單位，非用藥建議。' },
         baseline: { params: { lungSupply: 0.85, flowSpeed: 1, tissueDemand: 0.5 }, note: '藥物介入（模型）：參數回復基準值。' },
       };
       document.querySelectorAll('#drugPanel .drug').forEach((el) => {
@@ -382,7 +383,7 @@
         }).join('') + '<div class="ev dim" data-collapse="1" style="cursor:pointer">— 點此收合因果鏈（程式內來源證明，非自然界因果）—</div>';
     },
     _syncParamsUI() {
-      for (const key of ['lungSupply', 'flowSpeed', 'tissueDemand', 'anemia']) {
+      for (const key of ['lungSupply', 'flowSpeed', 'tissueDemand', 'anemia', 'temperature']) {
         const el = document.querySelector(`#paramPanel input[data-key=${key}]`);
         el.value = this.world.params[key];
         $('pv_' + key).textContent = Number(this.world.params[key]).toFixed(2);

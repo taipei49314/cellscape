@@ -75,6 +75,8 @@
     <input type="range" data-key="tissueDemand" min="0" max="1" step="0.01" value="0.5"></div>
   <div class="prm"><label><span data-i18n="params.anemia">貧血程度</span> <b id="pv_anemia" class="mono">0.00</b></label>
     <input type="range" data-key="anemia" min="0" max="0.9" step="0.05" value="0"></div>
+  <div class="prm"><label><span data-i18n="params.temperature">體溫 °C</span> <b id="pv_temperature" class="mono">37.0</b></label>
+    <input type="range" data-key="temperature" min="36" max="41" step="0.1" value="37"></div>
   <div class="prm stat"><i>肺泡水位</i><b id="statAlv" class="mono">—</b>
     <i>組織水位</i><b id="statTis" class="mono">—</b>
     <i>平均負載</i><b id="statMean" class="mono">—</b></div>
@@ -87,6 +89,7 @@
       <button type="button" class="btn2 tiny drug" data-preset="fever" data-i18n="drug.fever">敗血症（發燒）</button>
       <button type="button" class="btn2 tiny drug" data-preset="baseline" data-i18n="drug.baseline">回復基準</button>
       <button type="button" class="btn2 tiny drug" data-preset="transfusion" data-i18n="drug.transfusion">輸血（改善貧血）</button>
+      <button type="button" class="btn2 tiny drug" data-preset="antipyretic" data-i18n="drug.antipyretic">退燒（解熱劑）</button>
     </div>
   </div>
   <div class="note" data-i18n="params.note">組織色階 = 組織氧庫存水位（模型欄位），非診斷影像。</div>
