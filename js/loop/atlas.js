@@ -17,6 +17,8 @@
 
   const TABS = ['know', 'now', 'mech', 'src'];
   const TAB_NAMES = { know: '認識它', now: '看此刻', mech: '懂機制', src: '查來源' };
+  /* T-299 C3：EN 取 ContentEN.shell，否則回繁中原文 */
+  const L = (key, zh) => ((CSL.I18n && CSL.I18n.get() === 'en' && CSL.I18n.shell(key)) || zh);
   const CT_LABEL = {
     biology_reference: '文獻知識（背景）',
     model_assumption: '模型近似（本版工程假設）',
@@ -148,8 +150,11 @@
 
     /* ---------- 共用小件 ---------- */
     _capTag(cap) {
+      const ic = CSL.I18n ? CSL.I18n.cap(cap) : null;
       const legend = CSL.Content.capabilityLegend.find((l) => l.id === cap);
-      return `<span class="capTag cap-${esc(cap)}" title="${esc(legend ? legend.note : '')}">${esc(legend ? legend.label : cap)}</span>`;
+      const label = ic ? ic.label : (legend ? legend.label : cap);
+      const note = ic ? ic.note : (legend ? legend.note : '');
+      return `<span class="capTag cap-${esc(cap)}" title="${esc(note)}">${esc(label)}</span>`;
     },
     _claimRow(claimId) {
       const c = CSL.Content.claims[claimId];
@@ -160,7 +165,8 @@
       }).join(' ');
       const impl = c.implRef ? `<div class="dim small">實作對照：${esc(c.implRef)}</div>` : '';
       const limit = c.supportedLimit ? `<div class="dim small">適用限制：${esc(c.supportedLimit)}</div>` : '';
-      return `<div class="claim"><div>${esc(c.text)}</div>
+      const text = (CSL.I18n && CSL.I18n.claimText(claimId)) || c.text;   // C3：EN 覆蓋層，缺鍵回繁中
+      return `<div class="claim"><div>${esc(text)}</div>
         <div class="meta"><span class="ctTag ct-${esc(c.contentType)}">${esc(CT_LABEL[c.contentType] || c.contentType)}</span>
         <span class="rsTag">${esc(RS_LABEL[c.reviewStatus] || c.reviewStatus)}</span> ${srcs}</div>${impl}${limit}</div>`;
     },
@@ -172,22 +178,24 @@
     /* ---------- 認識它 ---------- */
     renderKnow() {
       const card = CSL.Content.cards.find((c) => c.id === this.activeCard);
+      const V = CSL.I18n ? CSL.I18n.card(card.id) : card;   // C3：EN 覆蓋層視圖（缺鍵回繁中）
+      const qLabel = (CSL.I18n && CSL.I18n.get() === 'en') ? 'Q' : '問';
       const isRbc = this.activeCard === 'rbc';
       const live = isRbc
         ? '<div class="dim small">此卡對應即時模型實體：選取的紅血球即為動態對象（看此刻頁籤）。</div>'
         : '<div class="note warn2">本連動模式未個別模擬——數值欄位不適用（以「不適用」標示，不以 0 頂替）。</div>';
       return this._cardChips() + `
         <div class="cardHead">${this._capTag(card.capability)}
-          <h3>${esc(card.name)} <span class="dim small">${esc(card.en)}</span></h3>
-          <p class="headline">${esc(card.headline)}</p>
-          <ul class="kps">${card.keyPoints.map((k) => `<li>${esc(k)}</li>`).join('')}</ul>
-          <button id="insideBtn" class="btn2 tiny" data-card="${esc(card.id)}">🔬 細胞內部（示意）</button>
-          ${card.capabilityNote ? `<div class="note">${esc(card.capabilityNote)}</div>` : ''}
+          <h3>${esc(V.name)} <span class="dim small">${esc(card.en)}</span></h3>
+          <p class="headline">${esc(V.headline)}</p>
+          <ul class="kps">${V.keyPoints.map((k) => `<li>${esc(k)}</li>`).join('')}</ul>
+          <button id="insideBtn" class="btn2 tiny" data-card="${esc(card.id)}">${esc(L('inside.entry', '🔬 細胞內部（示意）'))}</button>
+          ${V.capabilityNote ? `<div class="note">${esc(V.capabilityNote)}</div>` : ''}
           ${live}
         </div>
-        ${card.qa.map((qa, i) => `
+        ${V.qa.map((qa, i) => `
           <div class="qa" id="qa-${i}">
-            <div class="q">問${i + 1}：${esc(qa.q)}</div>
+            <div class="q">${esc(qLabel)}${i + 1}：${esc(qa.q)}</div>
             <div class="a">${esc(qa.a)}</div>
             <div class="claimLinks">${qa.claimIds.map((cid) =>
               `<button class="srcChip" data-claim="${esc(cid)}">依據：${esc(cid)}</button>`).join(' ')}</div>
@@ -352,13 +360,13 @@
         </ul>
         負載欄位是攜帶狀態的近似——沒有逐分子結合、沒有血紅素解離曲線；動畫節奏不代表結合/解離時間。</div>`;
       return this._cardChips() + `
-        <h3>懂機制：${esc(card.name)}</h3>
+        <h3>${esc(L('tab.mech', '懂機制'))}：${esc(card.name)}</h3>
         ${this.activeCard === 'rbc' ? '<div class="ill"><svg viewBox="0 0 240 90" role="img" aria-label="紅血球與血紅素示意">' +
           '<ellipse cx="70" cy="45" rx="46" ry="30" fill="#c0392b" opacity=".85"/><ellipse cx="70" cy="45" rx="18" ry="9" fill="#8e2a20" opacity=".9"/>' +
           '<text x="70" y="86" fill="#9fb6c9" font-size="9" text-anchor="middle">雙凹圓盤（示意）</text>' +
           '<g transform="translate(150,20)"><circle cx="0" cy="0" r="9" fill="#e67e22"/><circle cx="22" cy="14" r="9" fill="#e67e22"/><circle cx="14" cy="34" r="9" fill="#e67e22"/><circle cx="-8" cy="38" r="9" fill="#e67e22"/><text x="14" y="60" fill="#9fb6c9" font-size="9" text-anchor="middle">血紅素四聚體（示意）</text></g></svg>' +
           '<div class="dim tiny">機制示意／非本次分子模擬；展開時此標記持續顯示。</div></div>' : ''}
-        ${card.capability === 'dynamic' ? rulesBlock : `<div class="note">此卡為知識／結構說明；本連動世界的交換由聚合規則近似（見紅血球卡的規則區塊）。</div>`}
+        ${card.capability === 'dynamic' ? rulesBlock : `<div class="note">${esc(L('mech.knowledgeNote', '此卡為知識／結構說明；本連動世界的交換由聚合規則近似（見紅血球卡的規則區塊）。'))}</div>`}
         <div class="dim small">相關依據：</div>
         ${[...claimIds].map((cid) => this._claimRow(cid)).join('')}`;
     },
@@ -378,14 +386,14 @@
         <div class="srcRow">
           <b>[${esc(s.id)}] ${esc(s.publisher)} — ${esc(s.title)}</b>
           <div class="tiny"><a href="${esc(s.url)}" target="_blank" rel="noopener noreferrer">${esc(s.url)}</a></div>
-          <div class="dim tiny">用途範圍：${esc(s.use)}</div>
-          ${s.assetNote ? `<div class="dim tiny">素材注意：${esc(s.assetNote)}</div>` : ''}
+          <div class="dim tiny">${esc(L('src.usage', '用途範圍'))}：${esc(s.use)}</div>
+          ${s.assetNote ? `<div class="dim tiny">${esc(L('src.assetNote', '素材注意'))}：${esc(s.assetNote)}</div>` : ''}
           ${s.licenseNote ? `<div class="dim tiny">授權：${esc(s.licenseNote)}</div>` : ''}
-          <div class="dim tiny">核對日期：${esc(s.checkedOn)}</div>
+          <div class="dim tiny">${esc(L('src.checked', '核對日期'))}：${esc(s.checkedOn)}</div>
         </div>`).join('');
       return this._cardChips() + `
-        <h3>查來源：${esc(card.name)}</h3>
-        <div class="note warn2">「來源存在」不等於「主張已被來源支持」——biology_reference 條目目前為編輯草稿（待審），model_assumption 條目已對照本版實作核對。</div>
+        <h3>${esc(L('tab.src', '查來源'))}：${esc(card.name)}</h3>
+        <div class="note warn2">${esc(L('src.warn', '「來源存在」不等於「主張已被來源支持」——biology_reference 條目目前為編輯草稿（待審），model_assumption 條目已對照本版實作核對。'))}</div>
         <div class="dim small">本卡主張：</div>${claimsHtml || '<div class="dim small">（無）</div>'}
         <div class="dim small">對應來源：</div>${sourcesHtml || '<div class="dim small">（本卡主張皆為模型近似，無外部文獻來源）</div>'}
         <div class="note">分類對應：${CSL.Content.classification.filter((x) => x.cardId === card.id)
