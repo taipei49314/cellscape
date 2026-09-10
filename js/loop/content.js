@@ -286,12 +286,12 @@
       'C-plt-fragment':   { text: '血小板是骨髓巨核細胞脫落的細胞碎片，沒有細胞核。', contentType: 'biology_reference', sourceIds: ['S2'], reviewStatus: 'draft-pending', supportedLimit: '哺乳類。' },
       'C-plt-hemostasis': { text: '血小板在血管破損處黏附聚集形成栓子，配合凝血級聯止血。', contentType: 'biology_reference', sourceIds: ['S2'], reviewStatus: 'draft-pending', supportedLimit: '概念層級。' },
       /* 模型近似（對照本版實作核對） */
-      'C-model-load':     { text: '本模型以 0–1 負載欄位近似攜帶狀態，無逐分子結合/解離。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/core.js（entity.load、交換規則）', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.2.2；非 SpO₂。' },
-      'C-model-48':       { text: '48 顆 RBC 為固定抽樣代表，數量不代表全身總量。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/core.js ENTITY_COUNT', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.2.2。' },
-      'C-model-aggregate':{ text: '肺端/組織端交換由聚合界面規則處理，沒有個別上皮/內皮細胞實體。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/model.js（edges exchange）', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.2.2。' },
-      'C-model-lungsupply': { text: 'lungSupply 參數同時作用於外部輸入項與肺端交換項，不是吸入氧濃度。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/core.js step() 輸入項與 lung 交換', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.2.2。' },
-      'C-model-flowspeed':  { text: 'flowSpeed 等比縮放各邊跨越時間，不是心率或血壓。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/model.js baseTicks', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.2.2。' },
-      'C-model-tissuedemand': { text: 'tissueDemand 同時作用於組織端交換與使用項，非單一真實生理量。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/core.js step() 組織交換與使用', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.2.2。' },
+      'C-model-load':     { text: '本模型以 0–1 負載欄位近似攜帶狀態，無逐分子結合/解離。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/core.js（entity.load、交換規則）', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.3.0；非 SpO₂。' },
+      'C-model-48':       { text: '48 顆 RBC 為固定抽樣代表，數量不代表全身總量。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/core.js ENTITY_COUNT', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.3.0。' },
+      'C-model-aggregate':{ text: '肺端/組織端交換由聚合界面規則處理，沒有個別上皮/內皮細胞實體。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/model.js（edges exchange）', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.3.0。' },
+      'C-model-lungsupply': { text: 'lungSupply 參數同時作用於外部輸入項與肺端交換項，不是吸入氧濃度。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/core.js step() 輸入項與 lung 交換', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.3.0。' },
+      'C-model-flowspeed':  { text: 'flowSpeed 等比縮放各邊跨越時間，不是心率或血壓。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/model.js baseTicks', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.3.0。' },
+      'C-model-tissuedemand': { text: 'tissueDemand 同時作用於組織端交換與使用項，非單一真實生理量。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/core.js step() 組織交換與使用', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.3.0。' },
       'C-legacy-indep':   { text: '舊八場景（index.html）與本連動世界無共享模型狀態。', contentType: 'model_assumption', sourceIds: [], implRef: 'docs/LOOP-NOTES.md 執行節', reviewStatus: 'verified-implementation', supportedLimit: '架構邊界。' }
     },
 

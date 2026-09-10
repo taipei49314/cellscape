@@ -194,7 +194,7 @@
           const v = parseFloat(el.value);
           $('pv_' + key).textContent = v.toFixed(2);
           CSL.queueCommand(this.world, { kind: 'setParam', key, value: v, source: 'user' });
-          if (key === 'lungSupply') this.ensureBranch();   // 首次介入建立 A/B
+          if (key === 'lungSupply' || key === 'anemia') this.ensureBranch();   // 首次介入建立 A/B
         });
       });
       /* 藥物介入快速預設：與滑桿同一 setParam 事件路徑（CSL.queueCommand 唯一入口），
@@ -203,6 +203,7 @@
         bronchodilator: { params: { lungSupply: 1 }, note: '藥物介入（模型）：支氣管擴張劑——肺端供氧升至 1.00。模型單位，非用藥建議。' },
         betaBlocker: { params: { flowSpeed: 0.6 }, note: '藥物介入（模型）：乙型阻斷劑——循環流速降至 0.60。模型單位，非用藥建議。' },
         fever: { params: { tissueDemand: 0.85 }, note: '藥物介入（模型）：發燒／敗血症——組織需求升至 0.85。模型單位，非用藥建議。' },
+        transfusion: { params: { anemia: 0 }, note: '藥物介入（模型）：輸血——貧血程度歸零（Hb 可用上限恢復）。模型單位，非用藥建議。' },
         baseline: { params: { lungSupply: 0.85, flowSpeed: 1, tissueDemand: 0.5 }, note: '藥物介入（模型）：參數回復基準值。' },
       };
       document.querySelectorAll('#drugPanel .drug').forEach((el) => {
@@ -381,7 +382,7 @@
         }).join('') + '<div class="ev dim" data-collapse="1" style="cursor:pointer">— 點此收合因果鏈（程式內來源證明，非自然界因果）—</div>';
     },
     _syncParamsUI() {
-      for (const key of ['lungSupply', 'flowSpeed', 'tissueDemand']) {
+      for (const key of ['lungSupply', 'flowSpeed', 'tissueDemand', 'anemia']) {
         const el = document.querySelector(`#paramPanel input[data-key=${key}]`);
         el.value = this.world.params[key];
         $('pv_' + key).textContent = Number(this.world.params[key]).toFixed(2);
