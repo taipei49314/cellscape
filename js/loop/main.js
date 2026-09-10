@@ -226,6 +226,10 @@
         if (id != null) { this.selectedId = id; this._inspector(true); }
       });
       $('insClose2').addEventListener('click', () => this._inspector(false));
+      $('inspector').addEventListener('click', (e) => {
+        const btn = e.target.closest('#insideBtn');
+        if (btn && global.CSL.Inside) CSL.Inside.open(btn.dataset.card);   // T-299 C4：內部示意（唯讀 content 卡）
+      });
       $('evidenceToggle').addEventListener('click', () => this._panel('evidence'));
       $('insToggle').addEventListener('click', () => this._panel('inspector'));
       $('eventList').addEventListener('click', (e) => {
