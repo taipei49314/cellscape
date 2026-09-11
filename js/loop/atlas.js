@@ -373,7 +373,7 @@
       const card = CSL.Content.cards.find((c) => c.id === this.activeCard);
       const claimIds = new Set();
       card.qa.forEach((qa) => qa.claimIds.forEach((cid) => claimIds.add(cid)));
-      if (this.activeCard === 'rbc') ['C-model-load', 'C-model-aggregate', 'C-model-lungsupply', 'C-model-flowspeed', 'C-model-tissuedemand', 'C-model-co2', 'C-model-temp'].forEach((c) => claimIds.add(c));
+      if (this.activeCard === 'rbc') ['C-model-load', 'C-model-aggregate', 'C-model-lungsupply', 'C-model-flowspeed', 'C-model-tissuedemand', 'C-model-co2', 'C-model-temp', 'C-model-anemia'].forEach((c) => claimIds.add(c));
       const K = { KL: CSL.K_LUNG, KT: CSL.K_TISSUE, KU: CSL.K_USE, DT: 1 / 30 };
       const rulesBlock = `
         <div class="note"><b>本版（MODEL_VERSION ${esc(CSL.MODEL_VERSION)}）的三種規則——文字與實作綁定：</b>

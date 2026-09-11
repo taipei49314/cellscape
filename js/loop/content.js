@@ -3,7 +3,8 @@
    內容註冊表：角色卡、問答、主張、來源、讀值定義。
    邊界（v0.3 規格 §8）：本檔只含資料——不含可執行 JS、不含
    eval、不含 selector、不含可寫入 world 的 callback。
-   證據分級：biology_reference（文獻背景，編輯草稿待審）≠
+   證據分級：biology_reference（文獻背景；2026-09-10 由擁有者整批裁定 verified，
+   非逐條專家審核）≠
    model_assumption（本版工程近似，對照實作核對）≠
    runtime_observation（本次模型觀測）≠ illustrative（示意）。
    「來源存在」不等於「主張已被來源支持」；reviewStatus 逐條標記。
@@ -13,7 +14,7 @@
   const CSL = global.CSL || (global.CSL = {});
 
   CSL.Content = {
-    contentVersion: 'v0.3.0-content.3',
+    contentVersion: 'v0.3.0-content.4',
 
     /* 來源表：與 planning 包 SOURCE-REGISTER.json（S1–S8）一致。
        assetNote 提醒：引用敘事 ≠ 可打包其影片/插圖。 */
@@ -64,7 +65,7 @@
       { id: 'not_supported', label: '未支援', note: '目前無對應能力' }
     ],
 
-    /* 六項讀值定義（資訊層契約）：速率以模型時間換算（dt=1/30 模型秒/tick），
+    /* 七項讀值定義（資訊層契約；0.4.0 起含血中 CO₂ 指數）：速率以模型時間換算（dt=1/30 模型秒/tick），
        不使用牆上秒數。selectorId 即白名單；觀察模組不得新增其他讀取。 */
     readouts: [
       { id: 'sel_load', name: '選取 RBC 氧負載', formula: 'e.load / e.cap',
@@ -296,8 +297,9 @@
       'C-model-flowspeed':  { text: 'flowSpeed 等比縮放各邊跨越時間，不是心率或血壓。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/model.js baseTicks', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.5.1。' },
       'C-model-tissuedemand': { text: 'tissueDemand 同時作用於組織端交換與使用項，非單一真實生理量。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/core.js step() 組織交換與使用', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.5.1。' },
       'C-legacy-indep':   { text: '舊八場景（index.html）與本連動世界無共享模型狀態。', contentType: 'model_assumption', sourceIds: [], implRef: 'docs/LOOP-NOTES.md 執行節', reviewStatus: 'verified-implementation', supportedLimit: '架構邊界。' },
-      'C-model-co2':      { text: 'CO₂ 以 0–1 指數近似：組織隨使用量生產、肺端隨通氣排出；Bohr 效應以卸載倍率（0.75–1.35）近似。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/core.js co2 與 step() Bohr 項', reviewStatus: 'verified', supportedLimit: 'MODEL_VERSION 0.5.1；模型指數，非臨床酸鹼值。' },
-      'C-model-temp':     { text: '體溫以 Q10 因子（2^((T−37)/10)）乘 O₂ 使用速率；CO₂ 生產隨使用量連動。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/core.js step() q10 項', reviewStatus: 'draft-pending', supportedLimit: 'MODEL_VERSION 0.5.1；工程近似，非體溫調節模型。' }
+      'C-model-co2':      { text: 'CO₂ 以 0–1 指數近似：組織隨使用量生產、肺端隨通氣排出；Bohr 效應以卸載倍率（0.75–1.35）近似。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/core.js co2 與 step() Bohr 項', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.5.1；模型指數，非臨床酸鹼值。' },
+      'C-model-anemia':   { text: 'anemia 參數只閘肺端裝載上限（(1 − anemia) × 容量），不回溯調整已攜帶的氧，守恆帳結構不變。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/core.js step() 肺端 eCap', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.5.1；非血紅素濃度或血比容。' },
+      'C-model-temp':     { text: '體溫以 Q10 因子（2^((T−37)/10)）乘 O₂ 使用速率；CO₂ 生產隨使用量連動。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/core.js step() q10 項', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.5.1；工程近似，非體溫調節模型。' }
     },
 
     /* 分類對應（示例）：exact/broader/related/unmapped，不捏造標準 ontology ID */
