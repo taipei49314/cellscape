@@ -50,11 +50,13 @@
 - 因果鏈展開期間，時鐘／tick／水位／檢閱面板**持續更新**，僅事件清單區持續渲染
   鏈內容（EXPANDED_CHAIN_HUD_LIVE 契約；EVENT_CHAIN_OVERWRITTEN 契約不變）。
 - 事件環保留最近 **1000** 筆；快照/執行包含事件尾與閾值旗標
-  （`tissueLow / lastTissueLevel / lastParamEvent`）——匯入續行不重複、
-  不遺漏事件（IMPORT_EVENT_CONTINUATION 契約）。
+  （`tissueLow / lastTissueLevel / co2High / lastCo2 / lastParamEvent`）——匯入續行
+  不重複、不遺漏事件（IMPORT_EVENT_CONTINUATION 契約）。0.5.1 前 `exportRun`
+  漏帶兩個 CO₂ 旗標，且匯入驗證拒收 `co2BloodHigh` 事件，見下方版本說明。
 - 匯入深驗證涵蓋事件 **kind 相依 payload**：command 事件 before/after 必為
   `{key∈參數界限, value=有限數}`；handoff 事件必含正整數 actorId、字串
-  regionId、界內 `{edge, s}`；threshold 事件 ruleId 固定、level 為數值字串；
+  regionId、界內 `{edge, s}`；threshold 事件 ruleId 限 `tissueStockLow`／`co2BloodHigh`、
+  level 為數值字串；
   eventId 環內唯一且落後 eventSeq（IMPORT_EVENT_PAYLOAD_VALIDATION 契約）。
   稽核反例（command `after:null`）現為顯式拒絕，不再抵達 UI。
 - 事件欄位字串（source/regionId/ruleId/key）渲染前一律 HTML 跳脫——
@@ -80,6 +82,10 @@
 - 匯入先驗 schema／版本／dt／rules（edges 與常數與當前實作逐項比對）／尺寸／
   數值界限（實體欄位、庫存非負且不超容量、參數界限、事件 kind 相依 payload）——
   任一不符即顯式拒絕（無 eval；畸形包全數拒絕）。
+- **MODEL_VERSION 0.5.1**：無交換方程式變更；升版原因為檢查點身分契約修復（T-316 刀 D2）——
+  匯入驗證接受 `co2BloodHigh` 閾值事件（修復前含該事件的執行包一律 `SNAPSHOT_REJECTED`，
+  A/B 分支亦然）、`exportRun` 帶出 `co2High`／`lastCo2`（漏帶會使匯入後摘要分歧並重發事件）、
+  CO₂ 閾值補上本檔所述的 <0.60 解除遲滯。舊 0.5.0 執行包依版本閘顯式拒絕。
 - **MODEL_VERSION 0.2.2**：本版無交換方程式變更；升版原因為檢查點身分契約變更
   （digest 正規化納入 eventSeq、事件 payload 深驗證）——舊包之 digestChainTail
   以舊正規化計算，無法跨正規化延續，故顯式拒絕。
