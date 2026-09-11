@@ -67,7 +67,9 @@
 - 執行包（JSON）：modelVersion、schemaVersion、種子、RNG 狀態、固定步長、
   動作序列、實體、庫存、帳本、事件尾、閾值旗標、ID 分配狀態、摘要鏈尾。
 - 摘要（digest）比對下列指定模型欄位：tick、參數、庫存（含容量）、
-  實體（含 cap）、待處理 command 佇列、**事件序列配號 eventSeq**
+  實體（含 cap）、待處理 command 佇列、閾值旗標與其水位
+  （`_tissueLow`／`_lastTissueLevel`／`_co2High`／`_lastCo2`）、CO₂ 四欄
+  （blood／produced／expelled／retained）、**事件序列配號 eventSeq**
   （MODEL_STATE_DIGEST_COVERAGE 契約；DIGEST_SCOPE 修復——摘要相等即保證
   受測配號差異可識別；不保證不同事件歷史必然有不同摘要）。
   **摘要範圍界線（DIGEST_IS_NOT_EVENT_HISTORY_IDENTITY）**：摘要不涵蓋事件的
@@ -195,9 +197,13 @@
 
 - Gate C 未做：血紅素放大互動視角、章節 B/C 學習控制器、速率曲線圖、
   其餘卡片內容的編輯審核（現為待審草稿）。
+  **命名注意**：estate 帳本（T-303）另以「Gate C」指模型縱深（貧血／CO₂／體溫），
+  與本檔這個 Gate C 不是同一件事；本檔的 Gate C 仍未做。
 - Gate D 未做：真實 HTTP 部署載入、實機 FPS、5 人可用性門檻。
 - biology_reference 條目為依 S1–S8 一般敘事起草，未經專家逐條審核；
-  「來源存在」不等於「已驗證支持」。
+  「來源存在」不等於「已驗證支持」。2026-09-10 由擁有者整批裁定 20 條為
+  `verified`（整批裁定，非逐條專家審核）；`model_assumption` 條目為
+  `verified-implementation`，只表示程式照該敘述實作。各條以 reviewStatus 為準。
 - 觀察歷史不存於執行包（本輪不做 companion 檔）。
 
 ### v0.3.1 修復（回應 v0.3.0 獨立審查 cellscape-v030-review-evidence）
@@ -237,4 +243,5 @@ loop-smoke 7/7（已隨包）。
 
 本輪只改觀察／介面：短窗口按實際觀測秒數描述；選取空窗不算覆蓋時間，舊樣本不冒充目前趨勢；圖右端綁定 world.tick；剖面刷新識別綁定 session／run／branch／entity／tick，匯入後關閉舊剖面；面板互斥 class 完整清理。
 MODEL_VERSION=0.2.2 未變，Content 保持原樣；observationVersion=v0.3.2-obs.2。
-本次結論以 FINAL-REVIEW.md 與交付證據為準。以上歷次勾選表是歷史紀錄，不代表新增範圍已驗證。GitHub 遠端推送尚未執行，不以本機 commit 代替遠端收據。
+本次結論以 FINAL-REVIEW.md 與交付證據為準。以上歷次勾選表是歷史紀錄，不代表新增範圍已驗證。
+（後續補記）該封存輪當時尚未推送；本倉已於 2026-09-08 推送至 `taipei49314/cellscape`（私有），其後以 PR 進 main，CI 收據見 `docs/verification/ci-receipts-model-0.3.0-0.5.0.md`。

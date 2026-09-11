@@ -205,7 +205,7 @@
         fever: { params: { tissueDemand: 0.85, temperature: 39.5 }, note: '藥物介入（模型）：發燒／敗血症——組織需求升至 0.85、體溫升至 39.5 °C（Q10 使使用與 CO₂ 連動上升）。模型單位，非用藥建議。' },
         transfusion: { params: { anemia: 0 }, note: '藥物介入（模型）：輸血——貧血程度歸零（Hb 可用上限恢復）。模型單位，非用藥建議。' },
         antipyretic: { params: { temperature: 37 }, note: '藥物介入（模型）：退燒——體溫回復 37.0 °C。模型單位，非用藥建議。' },
-        baseline: { params: { lungSupply: 0.85, flowSpeed: 1, tissueDemand: 0.5 }, note: '藥物介入（模型）：參數回復基準值。' },
+        baseline: { params: { lungSupply: 0.85, flowSpeed: 1, tissueDemand: 0.5, anemia: 0, temperature: 37 }, note: '藥物介入（模型）：參數回復基準值（含貧血與體溫）。' },
       };
       document.querySelectorAll('#drugPanel .drug').forEach((el) => {
         el.addEventListener('click', () => {
@@ -343,7 +343,7 @@
         if (ev.kind === 'command') text = (ev.after && ev.after.key != null)
           ? `參數 ${esc(ev.after.key)} → ${esc(ev.after.value)}` : esc(ev.ruleId || '參數變更');
         else if (ev.kind === 'handoff') text = `RBC #${ev.actorId} 抵達 ${esc(ev.regionId)}`;
-        else if (ev.kind === 'threshold') text = '組織氧庫存低於閾值';
+        else if (ev.kind === 'threshold') text = ev.ruleId === 'co2BloodHigh' ? '血中 CO₂ 指數高於閾值' : '組織氧庫存低於閾值';
         else text = esc(ev.ruleId || ev.kind);
         const par = ev.parentEventIds && ev.parentEventIds.length
           ? `<span class="parents" data-ev="${ev.eventId}"> ← 因果鏈（${ev.parentEventIds.length}）</span>` : '';
@@ -377,7 +377,7 @@
             ? `參數 ${esc(ev.after.key)}：${esc(ev.before && ev.before.value)} → ${esc(ev.after.value)}`
             : esc(ev.ruleId || '參數變更');
           else if (ev.kind === 'handoff') text = `RBC #${ev.actorId} 抵達 ${esc(ev.regionId)}`;
-          else if (ev.kind === 'threshold') text = '組織氧庫存低於閾值（因果鏈根）';
+          else if (ev.kind === 'threshold') text = (ev.ruleId === 'co2BloodHigh' ? '血中 CO₂ 指數高於閾值' : '組織氧庫存低於閾值') + '（因果鏈根）';
           else text = esc(ev.ruleId || ev.kind);
           return `<div class="ev chain"><span class="tick mono">t${ev.tick}</span> <b>${text}</b><span class="src">${src}</span></div>`;
         }).join('') + '<div class="ev dim" data-collapse="1" style="cursor:pointer">— 點此收合因果鏈（程式內來源證明，非自然界因果）—</div>';

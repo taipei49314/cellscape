@@ -2,7 +2,7 @@
   "name": "cellscape-private",
   "version": "0.3.2",
   "private": true,
-  "description": "Cellscape Living Atlas Gate A/B private freeze",
+  "description": "Cellscape Living Atlas - product 0.3.2 (Gate A/B information layer) plus model 0.5.0 dimensions",
   "scripts": {
     "test": "node scripts/test.cjs"
   }

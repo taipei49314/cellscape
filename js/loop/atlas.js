@@ -249,11 +249,13 @@
       } else if (edge) exchangeLine = NW('nonExchange', { label: edge.label }) || `位於${edge.label}（非交換界面段）——此段無交換可證明。`;
 
       const change = CSL.Observe.recentChange(branchId, entityId);
-      const changeLine = (change.state === 'missing'
+      const changeLineRaw = (change.state === 'missing'
         ? (NW('changeMissing') || '負載最近變化：資料不足（本實體樣本尚少）。')
         : (NW('changeMeasured', { sec: change.seconds.toFixed(1), text: change.text, delta: change.delta != null ? '（' + (change.delta > 0 ? '+' : '') + change.delta.toFixed(3) + '）' : '' })
           || `負載最近變化（觀測 ${change.seconds.toFixed(1)} 模型秒）：${change.text}${change.delta != null ? '（' + (change.delta > 0 ? '+' : '') + change.delta.toFixed(3) + '）' : ''}。`))
-        .replace('上升', 'rising').replace('下降', 'falling');   // change.text 方向詞來自 observe 資料值
+      const changeLine = CSL.I18n && CSL.I18n.isEn && CSL.I18n.isEn()
+        ? changeLineRaw.replace('上升', 'rising').replace('下降', 'falling')   // EN：change.text 方向詞來自 observe 資料值
+        : changeLineRaw;
       const cov = CSL.Observe.coverageSeconds(branchId, entityId);
       const covLine = cov == null
         ? (NW('covMissing') || '觀察覆蓋：選取剛改變或剛匯入——本實體尚無歷史樣本（明示缺資料，不捏造曲線）。')
@@ -302,7 +304,7 @@
         <div class="nowLine dim">${esc(covLine)}</div>
         ${co2Line}
         ${readoutRows}
-        <div class="note">${esc(NW('defaultsNote') || '顯示前三項為預設讀值；其餘三項展開顯示。')}${defList ? '<details><summary class="dim small">' + esc(NW('expandLedger') || '展開守恆帳與規則細節') + '</summary>' + defList +
+        <div class="note">${esc(NW('defaultsNote') || '顯示前三項為預設讀值；其餘四項展開顯示。')}${defList ? '<details><summary class="dim small">' + esc(NW('expandLedger') || '展開守恆帳與規則細節') + '</summary>' + defList +
           `<div class="dim tiny">${esc(NW('ledgerLine', { initial: String(view.ledger.initialTotal.toFixed(3)), input: String(view.ledger.input.toFixed(3)), usage: String(view.ledger.usage.toFixed(3)), expelled: String(view.ledger.expelled.toFixed(3)), residual: view.ledger.lastResidual.toExponential(2) })
             || `守恆帳（每 30 tick 檢查，殘差 ≤1e-6）：初始 ${view.ledger.initialTotal.toFixed(3)}、累積輸入 ${view.ledger.input.toFixed(3)}、使用 ${view.ledger.usage.toFixed(3)}、呼出 ${view.ledger.expelled.toFixed(3)}、最近殘差 ${view.ledger.lastResidual.toExponential(2)}。`)}</div></details>` : ''}</div>
         <div class="note">${esc(NW('spo2Note') || '這裡的百分比是相對模型容量，不是 SpO₂；速率以模型時間換算（dt = 1/30 模型秒）。')}</div>
@@ -371,14 +373,16 @@
       const card = CSL.Content.cards.find((c) => c.id === this.activeCard);
       const claimIds = new Set();
       card.qa.forEach((qa) => qa.claimIds.forEach((cid) => claimIds.add(cid)));
-      if (this.activeCard === 'rbc') ['C-model-load', 'C-model-aggregate', 'C-model-lungsupply', 'C-model-flowspeed', 'C-model-tissuedemand'].forEach((c) => claimIds.add(c));
+      if (this.activeCard === 'rbc') ['C-model-load', 'C-model-aggregate', 'C-model-lungsupply', 'C-model-flowspeed', 'C-model-tissuedemand', 'C-model-co2', 'C-model-temp'].forEach((c) => claimIds.add(c));
       const K = { KL: CSL.K_LUNG, KT: CSL.K_TISSUE, KU: CSL.K_USE, DT: 1 / 30 };
       const rulesBlock = `
         <div class="note"><b>本版（MODEL_VERSION ${esc(CSL.MODEL_VERSION)}）的三種規則——文字與實作綁定：</b>
         <ul class="kps">
           <li>肺端裝載：flux = K_LUNG × max(0, 肺泡水位 − 負載) × lungSupply，受庫存與可用容量限制。K_LUNG = ${K.KL}（模型單位）。</li>
           <li>組織卸載：flux = K_TISSUE × max(0, 負載 − 組織水位) × (0.5 + tissueDemand)，受負載與組織容量限制。K_TISSUE = ${K.KT}。</li>
-          <li>組織使用：usage = K_USE × (0.5 + tissueDemand) × 組織水位，受現有庫存限制；庫存為零即無消耗。K_USE = ${K.KU}。</li>
+          <li>組織使用：usage = K_USE × (0.5 + tissueDemand) × 組織水位 × Q10，受現有庫存限制；庫存為零即無消耗。K_USE = ${K.KU}；Q10 = 2^((temperature − 37) / 10)（模型 0.5.0）。</li>
+          <li>貧血上限：肺端裝載的可用容量為 (1 − anemia) × cap——只閘裝載上限，不改守恆帳結構（模型 0.3.0）。</li>
+          <li>CO₂ 與 Bohr：組織隨使用量生產 CO₂ 指數、肺端隨通氣排出；卸載側乘 Bohr 倍率（0.75–1.35 鉗位，穩態為 1）。血中 CO₂ ≥0.70 觸發模型指數警示，非臨床酸鹼判讀（模型 0.4.0）。</li>
         </ul>
         負載欄位是攜帶狀態的近似——沒有逐分子結合、沒有血紅素解離曲線；動畫節奏不代表結合/解離時間。</div>`;
       return this._cardChips() + `
@@ -415,7 +419,7 @@
         </div>`).join('');
       return this._cardChips() + `
         <h3>${esc(L('tab.src', '查來源'))}：${esc(card.name)}</h3>
-        <div class="note warn2">${esc(L('src.warn', '「來源存在」不等於「主張已被來源支持」——biology_reference 條目目前為編輯草稿（待審），model_assumption 條目已對照本版實作核對。'))}</div>
+        <div class="note warn2">${esc(L('src.warn', '「來源存在」不等於「主張已被來源支持」——biology_reference 條目由人類整批裁定，不是逐條專家審核；model_assumption 條目只表示已對照本版實作核對；仍有待審條目，以各條 reviewStatus 為準。'))}</div>
         <div class="dim small">本卡主張：</div>${claimsHtml || '<div class="dim small">（無）</div>'}
         <div class="dim small">對應來源：</div>${sourcesHtml || '<div class="dim small">（本卡主張皆為模型近似，無外部文獻來源）</div>'}
         <div class="note">分類對應：${CSL.Content.classification.filter((x) => x.cardId === card.id)
