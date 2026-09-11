@@ -250,6 +250,19 @@ const run = (s) => vm.runInContext(s, c, { timeout: 60000 });
   check('claims-referenced-by-ui', unref.length === 0, unref.length ? 'unreferenced: ' + unref.join(', ') : String(r.all.length) + ' claims');
 }
 
+/* 11. 導覽字幕的 EN 鍵：tour.js 用到的每個鍵都要在覆蓋層存在（缺鍵會靜默退回繁中） */
+{
+  const tourSrc = load('tour.js');
+  const used = Array.from(new Set((tourSrc.match(/T\('([a-z0-9.]+)'/g) || [])
+    .map((m) => m.slice(3, -1))));
+  const r = run(`(()=>({ keys: Object.keys((CSL.ContentEN && CSL.ContentEN.tour) || {}) }))()`);
+  const have = new Set(r.keys);
+  const missing = used.filter((k) => !have.has(k));
+  const unused = r.keys.filter((k) => used.indexOf(k) < 0);
+  check('tour-en-keys-cover-narration', used.length > 0 && missing.length === 0 && unused.length === 0,
+    JSON.stringify({ used: used.length, en: r.keys.length, missing, unused }));
+}
+
 let fails = 0;
 console.log('=== v0.3 Atlas self-built tests ===');
 for (const r of results) { console.log((r.pass ? 'PASS' : 'FAIL') + '  ' + r.name + (r.pass ? '' : '   ' + r.detail)); if (!r.pass) fails++; }

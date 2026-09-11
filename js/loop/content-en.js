@@ -1,6 +1,6 @@
 /* ============================================================
    CELLSCAPE Living Atlas — content-en.js（T-299 刀 C3）
-   content.js（v0.3.0-content.3）的英文覆蓋層：純資料、無可執行邏輯。
+   content.js（v0.3.0-content.4）的英文覆蓋層：純資料、無可執行邏輯。
    邊界：
    - 本檔是「平行翻譯層」，不改寫 content.js 的正本與證據分級；
      層級與聲明沿用各角色卡／主張登錄（reviewStatus 不因翻譯改變）。
@@ -14,7 +14,7 @@
 
   CSL.ContentEN = {
     enVersion: 'content-en.1',
-    mirrors: 'v0.3.0-content.3',
+    mirrors: 'v0.3.0-content.4',
 
     /* 殼層字串（loop.html data-i18n 與 atlas 標題） */
     shell: {
@@ -128,7 +128,23 @@
       'C-model-tissuedemand':'tissueDemand acts on both tissue exchange and usage — it is not a single real physiological quantity.',
       'C-legacy-indep':   'The eight legacy scenes (index.html) share no model state with this linked world.',
       'C-model-co2':      'CO₂ is approximated as a 0–1 index: produced in the tissues in step with usage, expelled at the lung in step with ventilation; the Bohr effect is approximated as an unloading multiplier (0.75–1.35).',
-      'C-model-temp':     'Body temperature multiplies the O₂ usage rate by a Q10 factor (2^((T−37)/10)); CO₂ production follows usage.'
+      'C-model-temp':     'Body temperature multiplies the O₂ usage rate by a Q10 factor (2^((T−37)/10)); CO₂ production follows usage.',
+      'C-model-anemia':   'The anemia parameter only gates the lung-side loading ceiling ((1 − anemia) × capacity); it does not retroactively change oxygen already carried, and the conservation ledger is unchanged.'
+    },
+
+    /* 導覽字幕的英文對照（tour.js；缺鍵時退回繁中原句） */
+    tour: {
+      's0.say': 'Following red blood cell #{id}. The camera is in the lung microenvironment — waiting for it to enter a lung capillary.',
+      's0.meet': 'Red blood cell #{id} enters the lung capillary — oxygen loads from the alveolar side (flux = coefficient × driving gap × available capacity).',
+      's1.meet': 'Oxygen load is rising (model field: load) — the colour shift is a visual mapping of that field, nothing more.',
+      's2.meet': 'Leaving the lung — through the pulmonary vein and left heart into the systemic loop. World time continues; nothing is reset.',
+      's3.meet': 'Arriving at a tissue capillary — oxygen unloads into the tissue store; tissue cells draw on it per the demand parameter (colour = tissue oxygen level, a model field).',
+      's4.enter': 'Tour intervention: lowering lung-side supply (this action is written into the model record, tagged as source tour, and can be replayed and compared).',
+      's5.say': 'Intervention in effect: lung-side loading is reduced — waiting for the tissue store to respond (the event record keeps the trail).',
+      's6.enter': 'Restoring lung-side supply — the model returns to baseline conditions (the full parameter history stays inside the same run).',
+      's7.say': 'Recovering… the tissue store is climbing back.',
+      's7.meet': 'Journey complete. You can now: press A/B to compare baseline vs intervention, open the event log to trace causes, or switch to free exploration and change parameters.',
+      'timeout': '(Wait timed out, skipping to the next step — the model has not produced that event.)'
     },
 
     /* 八卡的英文對照（結構與 content.js cards 對應） */

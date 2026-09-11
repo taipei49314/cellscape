@@ -7,6 +7,9 @@
   'use strict';
   const CSL = global.CSL || (global.CSL = {});
 
+  /* 導覽字幕 i18n（T-316 刀 D3）：EN 缺鍵一律退回繁中原句；不改步驟順序與指令。 */
+  const T = (key, vars) => (CSL.I18n && CSL.I18n.tour ? CSL.I18n.tour(key, vars) : null);
+
   const EDGE = {};
   CSL.EDGES.forEach((e, i) => { EDGE[e.id] = i; });
 
@@ -24,7 +27,7 @@
       if (st) {
         if (st.cam) api.setCamera(st.cam);
         if (st.onEnter) st.onEnter(world, api);
-        else if (st.say) api.subtitle(st.say(), 4.5);
+        if (st.say) api.subtitle(st.say(), 4.5);   /* 第 0 步帶空 onEnter，原本的 else 讓字幕永不顯示 */
       }
     },
     stop() {
@@ -40,27 +43,27 @@
           cam: 'LUNG',
           until: (w) => has(w) && w.entities[id].edge === EDGE.LUNG_CAP,
           maxTicks: 5400,
-          say: () => `跟隨開始：紅血球 #${id}。鏡頭來到肺微環境——等待它進入肺微血管。`,
+          say: () => T('s0.say', { id }) || `跟隨開始：紅血球 #${id}。鏡頭來到肺微環境——等待它進入肺微血管。`,
           onEnter: (w) => {},
-          sayOnMeet: () => `紅血球 #${id} 進入肺微血管——氧從肺泡側裝載（通量 = 係數 × 驅動量 × 可用容量）。`,
+          sayOnMeet: () => T('s0.meet', { id }) || `紅血球 #${id} 進入肺微血管——氧從肺泡側裝載（通量 = 係數 × 驅動量 × 可用容量）。`,
         },
         { // 1 — 負載上升
           cam: null,
           until: (w) => has(w) && w.entities[id].load > 0.7,
           maxTicks: 2700,
-          sayOnMeet: () => `氧負載上升（模型欄位 load）——外觀色調隨負載變化，這是模型欄位的視覺映射。`,
+          sayOnMeet: () => T('s1.meet') || `氧負載上升（模型欄位 load）——外觀色調隨負載變化，這是模型欄位的視覺映射。`,
         },
         { // 2 — 離開肺
           cam: 'OVERVIEW',
           until: (w) => has(w) && w.entities[id].edge !== EDGE.LUNG_CAP,
           maxTicks: 3600,
-          sayOnMeet: () => `離開肺部——經肺靜脈、左心進入體循環。世界時間延續，沒有重置。`,
+          sayOnMeet: () => T('s2.meet') || `離開肺部——經肺靜脈、左心進入體循環。世界時間延續，沒有重置。`,
         },
         { // 3 — 抵達組織
           cam: 'TISSUE',
           until: (w) => has(w) && w.entities[id].edge === EDGE.TISSUE_CAP,
           maxTicks: 7200,
-          sayOnMeet: () => `抵達組織微血管——氧卸載到組織庫存；組織細胞依需求參數取用（色階 = 組織氧庫存水位，模型欄位）。`,
+          sayOnMeet: () => T('s3.meet') || `抵達組織微血管——氧卸載到組織庫存；組織細胞依需求參數取用（色階 = 組織氧庫存水位，模型欄位）。`,
         },
         { // 4 — 導覽介入：降低肺端供氧
           cam: null,
@@ -70,7 +73,7 @@
             CSL.queueCommand(w, { kind: 'setParam', key: 'lungSupply', value: 0.12, source: 'tour' });
             w._tourLowed = true;
             api.enableBranch();
-            api.subtitle('導覽介入：降低肺端供氧（此動作已寫入模型記錄，來源標記為 tour，可回放比較）。', 5);
+            api.subtitle(T('s4.enter') || '導覽介入：降低肺端供氧（此動作已寫入模型記錄，來源標記為 tour，可回放比較）。', 5);
           },
           say: () => null,
         },
@@ -80,7 +83,7 @@
           until: (w) => w._tissueLow === true ||
             (has(w) && w.entities[id].edge === EDGE.LUNG_CAP && w.entities[id].load < 0.45),
           maxTicks: 3600,
-          say: () => '介入生效中：肺端裝載減少——等待組織庫存反應（事件記錄可追溯）。',
+          say: () => T('s5.say') || '介入生效中：肺端裝載減少——等待組織庫存反應（事件記錄可追溯）。',
         },
         { // 6 — 恢復
           cam: null,
@@ -89,7 +92,7 @@
           onEnter: (w, api) => {
             CSL.queueCommand(w, { kind: 'setParam', key: 'lungSupply', value: 0.85, source: 'tour' });
             w._tourRestored = true;
-            api.subtitle('恢復肺端供氧——模型回到基線條件（同一 run 內的參數歷史完整保留）。', 5);
+            api.subtitle(T('s6.enter') || '恢復肺端供氧——模型回到基線條件（同一 run 內的參數歷史完整保留）。', 5);
           },
           say: () => null,
         },
@@ -97,8 +100,8 @@
           cam: 'OVERVIEW',
           until: (w) => w.compartments.tissue.stock / w.compartments.tissue.capacity > 0.45,
           maxTicks: 5400,
-          say: () => '恢復中……組織庫存回升。',
-          sayOnMeet: () => '旅程完成。你可以：按 A/B 比較「基線 vs 介入」、打開事件記錄追因果、或切到自由探索改參數。',
+          say: () => T('s7.say') || '恢復中……組織庫存回升。',
+          sayOnMeet: () => T('s7.meet') || '旅程完成。你可以：按 A/B 比較「基線 vs 介入」、打開事件記錄追因果、或切到自由探索改參數。',
           ends: true,
         },
       ];
@@ -124,7 +127,7 @@
         // 逾時保底：跳過（導覽敘事不得虛構未發生的事件）
         this.idx++; this.waited = 0;
         if (st.ends) { this.active = false; api.tourDone(); return; }  // 結尾步逾時也要正常收幕
-        if (st.sayOnMeet) api.subtitle('（等待逾時，跳到下一步——模型尚未出現該事件。）', 4);
+        if (st.sayOnMeet) api.subtitle(T('timeout') || '（等待逾時，跳到下一步——模型尚未出現該事件。）', 4);
         const nxt = this.steps[this.idx];
         if (nxt) {
           if (nxt.cam) api.setCamera(nxt.cam);

@@ -84,6 +84,16 @@
     return s;
   }
 
+  /* 導覽字幕（T-316 刀 D3）：EN 缺鍵回 null，tour.js 退回繁中原句——
+     不猜譯、不空白；導覽流程與步驟順序不因語言改變。 */
+  function tour(key, vars) {
+    const E = en() && en().tour;
+    if (!(get() === 'en' && E && E[key])) return null;
+    let s = E[key];
+    if (vars) for (const k of Object.keys(vars)) s = s.split('{' + k + '}').join(String(vars[k]));
+    return s;
+  }
+
   /* 把 data-i18n 元素換成 EN；切回 zh 時以 data-i18n-zh 還原。
      data-i18n-placeholder 元素改 placeholder 屬性（同樣記 zh 原值）。 */
   function applyShell(root) {
@@ -110,5 +120,5 @@
     });
   }
 
-  CSL.I18n = { get, set, toggle, card, claimText, readout, cap, shell, now, isEn, applyShell, LOCALES };
+  CSL.I18n = { get, set, toggle, card, claimText, readout, cap, shell, now, tour, isEn, applyShell, LOCALES };
 })(typeof window !== 'undefined' ? window : globalThis);
