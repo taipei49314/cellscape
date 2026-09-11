@@ -136,20 +136,21 @@ const SETUP = `
   check('param-limits-clamp-to-exported-limits', r.clamped && r.inRange, JSON.stringify(r));
 }
 
-/* 7. 凍結基線守門：unchanged-core.json 中仍相符的五檔不得被動到。
-      core.js 與 content.js 已由 T-303／T-316 具名局部解凍修改過，
-      基線檔刻意不改寫，故此處只守其餘五檔並如實列出例外。 */
+/* 7. 凍結基線守門：unchanged-core.json 中仍相符的四檔不得被動到。
+      core.js／content.js（T-303、T-316 刀 D2）與 tour.js（T-316 刀 D3）已由
+      具名局部解凍修改過；基線檔是不改寫的歷史收據，故此處只守其餘四檔，
+      並如實列出例外。要恢復全七檔守門，需要人類另行裁定新的凍結基線。 */
 {
   const baseline = JSON.parse(fs.readFileSync(path.join(root, 'docs/verification/unchanged-core.json'), 'utf8'));
   const map = baseline.files || baseline;
-  const exempt = ['js/loop/core.js', 'js/loop/content.js'];
+  const exempt = ['js/loop/core.js', 'js/loop/content.js', 'js/loop/tour.js'];
   const drift = [];
   for (const [file, expected] of Object.entries(map)) {
     if (exempt.includes(file)) continue;
     const actual = crypto.createHash('sha256').update(fs.readFileSync(path.join(root, file))).digest('hex');
     if (actual !== String(expected).replace(/^sha256:/, '')) drift.push({ file, expected, actual });
   }
-  check('unchanged-core-five-files-intact', drift.length === 0,
+  check('unchanged-core-remaining-files-intact', drift.length === 0,
     drift.length ? JSON.stringify(drift) : 'exempt (named unfreeze): ' + exempt.join(', '));
 }
 
