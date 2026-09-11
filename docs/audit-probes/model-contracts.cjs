@@ -191,30 +191,38 @@ const SETUP = `
       && r.continued && r.continued.same, JSON.stringify(r));
 }
 
-/* 9. CO₂ 閾值遲滯不變式（≥0.70 觸發、<0.60 解除）：
-      走一段「先缺氧後補足通氣」的情節，逐 tick 驗證旗標與事件只在上升緣產生。 */
+/* 9. CO₂ 閾值遲滯不變式（≥0.70 觸發、<0.60 解除）。
+      三階段情節：高位 → 緩降（低通氣，每 tick 只掉約 1.7%，必然停留在 0.60–0.70 帶內）
+      → 全通氣清除。CO₂ 排出為 blood × 0.34 × lungSupply，所以緩降階段的通氣必須壓低，
+      否則單一 tick 就會跨過整個遲滯帶（這正是本測試第一版在 pool 上失敗的原因）。 */
 {
   const c = freshEnv();
   const r = run(c, `(()=>{${SETUP}
     const w = CSL.createWorld({ seed: 7070 });
-    applyParams(w, { temperature: 41, tissueDemand: 1, lungSupply: 0.12 });
     const trace = [];
-    for (let i = 0; i < 500; i++) { CSL.step(w); trace.push({ b: w.co2.blood, hi: !!w._co2High, n: w.events.filter((e)=>e.ruleId==='co2BloodHigh').length }); }
-    applyParams(w, { lungSupply: 1, tissueDemand: 0, temperature: 36 });   // 回復通氣
-    for (let i = 0; i < 900; i++) { CSL.step(w); trace.push({ b: w.co2.blood, hi: !!w._co2High, n: w.events.filter((e)=>e.ruleId==='co2BloodHigh').length }); }
-    let aboveHighAlwaysHi = true, belowLowAlwaysClear = true, eventsOnlyOnRise = true, cleared = false, min = 1, max = 0;
+    const sample = () => trace.push({ b: w.co2.blood, hi: !!w._co2High,
+      n: w.events.filter((e) => e.ruleId === 'co2BloodHigh').length });
+    applyParams(w, { temperature: 41, tissueDemand: 1, lungSupply: 0.12 });   // 1) 推高
+    for (let i = 0; i < 400; i++) { CSL.step(w); sample(); }
+    applyParams(w, { temperature: 36, tissueDemand: 0, lungSupply: 0.05 });   // 2) 緩降
+    for (let i = 0; i < 400; i++) { CSL.step(w); sample(); }
+    applyParams(w, { lungSupply: 1 });                                        // 3) 全通氣清除
+    for (let i = 0; i < 400; i++) { CSL.step(w); sample(); }
+    let aboveHighAlwaysHi = true, belowLowAlwaysClear = true, eventsOnlyOnRise = true, cleared = false;
+    let midHold = false, min = 1, max = 0;
     for (let i = 1; i < trace.length; i++) {
-      const p = trace[i-1], t = trace[i];
+      const p = trace[i - 1], t = trace[i];
       min = Math.min(min, t.b); max = Math.max(max, t.b);
       if (t.b >= 0.70 && !t.hi) aboveHighAlwaysHi = false;
       if (t.b < 0.60 && t.hi) belowLowAlwaysClear = false;
       if (!p.hi && t.hi) { if (t.n !== p.n + 1) eventsOnlyOnRise = false; }
       else if (t.n !== p.n) eventsOnlyOnRise = false;
       if (p.hi && !t.hi) cleared = true;
+      if (t.b >= 0.60 && t.b < 0.70 && t.hi) midHold = true;   // 遲滯帶內維持高位
     }
-    const midHold = trace.some((t, i) => i > 0 && t.b >= 0.60 && t.b < 0.70 && t.hi);   // 遲滯帶內維持高位
     return { aboveHighAlwaysHi, belowLowAlwaysClear, eventsOnlyOnRise, cleared, midHold, min, max,
-             events: trace[trace.length-1].n };
+             events: trace[trace.length - 1].n,
+             bandTicks: trace.filter((t) => t.b >= 0.60 && t.b < 0.70).length };
   })()`);
   check('co2-threshold-hysteresis',
     r.aboveHighAlwaysHi && r.belowLowAlwaysClear && r.eventsOnlyOnRise && r.cleared && r.midHold,
