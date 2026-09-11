@@ -1,6 +1,6 @@
 /* ============================================================
    CELLSCAPE Living Atlas — content-en.js（T-299 刀 C3）
-   content.js（v0.3.0-content.1）的英文覆蓋層：純資料、無可執行邏輯。
+   content.js（v0.3.0-content.3）的英文覆蓋層：純資料、無可執行邏輯。
    邊界：
    - 本檔是「平行翻譯層」，不改寫 content.js 的正本與證據分級；
      層級與聲明沿用各角色卡／主張登錄（reviewStatus 不因翻譯改變）。
@@ -14,7 +14,7 @@
 
   CSL.ContentEN = {
     enVersion: 'content-en.1',
-    mirrors: 'v0.3.0-content.1',
+    mirrors: 'v0.3.0-content.3',
 
     /* 殼層字串（loop.html data-i18n 與 atlas 標題） */
     shell: {
@@ -48,7 +48,7 @@
       'hud.o2load': 'Oxygen load (load)', 'hud.loadNote': 'load is a model field (0–1 model units), not SpO₂.',
       'hud.eventsHint': 'Click an event to expand its parent chain',
       'search.placeholder': 'Search roles / questions (zh · EN · RBC…)',
-      'src.warn': '“A source exists” does not mean “the claim is supported by that source” — biology_reference entries are editorial drafts (pending review); model_assumption entries are verified against this implementation.'
+      'src.warn': '“A source exists” does not mean “the claim is supported by that source” — biology_reference entries were ruled verified as a batch by the owner, not reviewed claim by claim; model_assumption entries only state that the code matches the wording. Some entries are still pending; the reviewStatus of each claim is authoritative.'
     },
 
     /* 「看此刻」觀察散文：{var} 佔位模板；語義契約逐句保留
@@ -73,7 +73,7 @@
       roMissing: 'missing data',
       vcLine: 'session #{session} · branch {branch} · run {run} · tick {tick} · entity {entity}',
       vcLine2: 'content pack {content} · observation rules {obs}',
-      defaultsNote: 'The first three rows are default readouts; the other three expand.',
+      defaultsNote: 'The first three rows are default readouts; the other four expand.',
       expandLedger: 'Expand conservation ledger and rule details',
       ledgerLine: 'Conservation ledger (checked every 30 ticks, residual ≤1e-6): initial {initial}, cumulative input {input}, usage {usage}, exhaled {expelled}, latest residual {residual}.',
       spo2Note: 'Percentages here are relative to model capacity, not SpO₂; rates are converted in model time (dt = 1/30 model-seconds).',
@@ -126,7 +126,9 @@
       'C-model-lungsupply':'The lungSupply parameter acts on both the external input term and the lung exchange term — it is not inhaled oxygen concentration.',
       'C-model-flowspeed':'flowSpeed uniformly scales crossing times on every edge — it is not heart rate or blood pressure.',
       'C-model-tissuedemand':'tissueDemand acts on both tissue exchange and usage — it is not a single real physiological quantity.',
-      'C-legacy-indep':   'The eight legacy scenes (index.html) share no model state with this linked world.'
+      'C-legacy-indep':   'The eight legacy scenes (index.html) share no model state with this linked world.',
+      'C-model-co2':      'CO₂ is approximated as a 0–1 index: produced in the tissues in step with usage, expelled at the lung in step with ventilation; the Bohr effect is approximated as an unloading multiplier (0.75–1.35).',
+      'C-model-temp':     'Body temperature multiplies the O₂ usage rate by a Q10 factor (2^((T−37)/10)); CO₂ production follows usage.'
     },
 
     /* 八卡的英文對照（結構與 content.js cards 對應） */

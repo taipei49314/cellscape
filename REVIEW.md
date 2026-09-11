@@ -1,4 +1,5 @@
-> 歷史審查／交付說明。當前私人封存範圍請見 [FINAL-REVIEW](docs/FINAL-REVIEW.md)。
+> 歷史審查／交付說明。當前私人封存範圍請見 [FINAL-REVIEW](docs/FINAL-REVIEW.md)；
+> 封存後的模型 0.3.0–0.5.0 與其 CI 收據見 [ci-receipts-model-0.3.0-0.5.0](docs/verification/ci-receipts-model-0.3.0-0.5.0.md)。
 
 # CELLSCAPE 審查包 · Review Guide
 
