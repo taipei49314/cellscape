@@ -2,7 +2,7 @@ name: npm test
 run-name: npm test @ ${{ github.ref_name }}
 
 # T-299（EC 帳本）：cellscape 的最小 pool 測試 workflow。
-# 只跑隨包零依賴的 scripts/test.cjs（Atlas 10＋Loop 7＋模型契約 7＋觀察邊界 4）；
+# 只跑隨包零依賴的 scripts/test.cjs（Atlas 10＋Loop 7＋模型契約 9＋觀察邊界 4）；
 # 不安裝 npm 依賴、不做瀏覽器驗收、不算完整產品驗證。
 
 on:

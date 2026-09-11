@@ -153,7 +153,75 @@ const SETUP = `
     drift.length ? JSON.stringify(drift) : 'exempt (named unfreeze): ' + exempt.join(', '));
 }
 
-console.log('=== model behaviour contracts (0.3.0 / 0.4.0 / 0.5.0) ===');
+/* 8. CO₂ 閾值事件必須能匯出→匯入→續行（T-316 刀 D2 的迴歸）。
+      修復前：core.js 的 validateSnapshot 只接受 tissueStockLow，
+      事件環一旦含 co2BloodHigh，importRun 與 A/B 分支都會 SNAPSHOT_REJECTED。 */
+{
+  const c = freshEnv();
+  const r = run(c, `(()=>{${SETUP}
+    const stress = { temperature: 41, tissueDemand: 1, lungSupply: 0.12 };
+    const w = CSL.createWorld({ seed: 6060 });
+    applyParams(w, stress);
+    for (let i = 0; i < 400; i++) { CSL.step(w); CSL.digestStep(w); }
+    const co2Events = w.events.filter((e) => e.kind === 'threshold' && e.ruleId === 'co2BloodHigh').length;
+    const pack = CSL.exportRun(w);
+    const parsed = JSON.parse(pack);
+    let imported = null, importError = null;
+    try { imported = CSL.importRun(pack); } catch (e) { importError = String(e); }
+    let branchError = null;
+    try { const b = CSL.createWorld({ seed: w.seed, runId: 'A-' + w.runId, branchOf: w.runId });
+          CSL.restore(b, CSL.snapshot(w)); }
+    catch (e) { branchError = String(e); }
+    let continued = null;
+    if (imported) {
+      for (let i = 0; i < 120; i++) { CSL.step(imported); CSL.digestStep(imported); }
+      const ref = CSL.createWorld({ seed: 6060 });
+      applyParams(ref, stress);
+      for (let i = 0; i < 520; i++) { CSL.step(ref); CSL.digestStep(ref); }
+      continued = { same: imported.digestChain[imported.digestChain.length - 1] === ref.digestChain[ref.digestChain.length - 1],
+                    reEmitted: imported.events.filter((e) => e.ruleId === 'co2BloodHigh').length };
+    }
+    return { co2Events, importError, branchError,
+             packHasFlags: Object.prototype.hasOwnProperty.call(parsed, 'co2High')
+               && Object.prototype.hasOwnProperty.call(parsed, 'lastCo2'),
+             flagsMatch: !!parsed.co2High === !!w._co2High, continued };
+  })()`);
+  check('co2-event-export-import-continues',
+    r.co2Events > 0 && !r.importError && !r.branchError && r.packHasFlags && r.flagsMatch
+      && r.continued && r.continued.same, JSON.stringify(r));
+}
+
+/* 9. CO₂ 閾值遲滯不變式（≥0.70 觸發、<0.60 解除）：
+      走一段「先缺氧後補足通氣」的情節，逐 tick 驗證旗標與事件只在上升緣產生。 */
+{
+  const c = freshEnv();
+  const r = run(c, `(()=>{${SETUP}
+    const w = CSL.createWorld({ seed: 7070 });
+    applyParams(w, { temperature: 41, tissueDemand: 1, lungSupply: 0.12 });
+    const trace = [];
+    for (let i = 0; i < 500; i++) { CSL.step(w); trace.push({ b: w.co2.blood, hi: !!w._co2High, n: w.events.filter((e)=>e.ruleId==='co2BloodHigh').length }); }
+    applyParams(w, { lungSupply: 1, tissueDemand: 0, temperature: 36 });   // 回復通氣
+    for (let i = 0; i < 900; i++) { CSL.step(w); trace.push({ b: w.co2.blood, hi: !!w._co2High, n: w.events.filter((e)=>e.ruleId==='co2BloodHigh').length }); }
+    let aboveHighAlwaysHi = true, belowLowAlwaysClear = true, eventsOnlyOnRise = true, cleared = false, min = 1, max = 0;
+    for (let i = 1; i < trace.length; i++) {
+      const p = trace[i-1], t = trace[i];
+      min = Math.min(min, t.b); max = Math.max(max, t.b);
+      if (t.b >= 0.70 && !t.hi) aboveHighAlwaysHi = false;
+      if (t.b < 0.60 && t.hi) belowLowAlwaysClear = false;
+      if (!p.hi && t.hi) { if (t.n !== p.n + 1) eventsOnlyOnRise = false; }
+      else if (t.n !== p.n) eventsOnlyOnRise = false;
+      if (p.hi && !t.hi) cleared = true;
+    }
+    const midHold = trace.some((t, i) => i > 0 && t.b >= 0.60 && t.b < 0.70 && t.hi);   // 遲滯帶內維持高位
+    return { aboveHighAlwaysHi, belowLowAlwaysClear, eventsOnlyOnRise, cleared, midHold, min, max,
+             events: trace[trace.length-1].n };
+  })()`);
+  check('co2-threshold-hysteresis',
+    r.aboveHighAlwaysHi && r.belowLowAlwaysClear && r.eventsOnlyOnRise && r.cleared && r.midHold,
+    JSON.stringify(r));
+}
+
+console.log('=== model behaviour contracts (0.3.0 / 0.4.0 / 0.5.0 / 0.5.1) ===');
 let fails = 0;
 for (const r of results) {
   console.log((r.pass ? 'PASS' : 'FAIL') + '  ' + r.name + '   ' + r.detail);

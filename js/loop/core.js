@@ -15,7 +15,9 @@
      （MODEL_RULE_IDENTITY 契約）。
      0.2.2：digest 納入 eventSeq（DIGEST_SCOPE 修復）＋事件 kind 相依 payload
      深驗證。舊包之 digestChainTail 以舊正規化計算，無法跨版延續，故顯式拒絕。 */
-  CSL.MODEL_VERSION = '0.5.0';   /* 0.5.0：新增 temperature 參數（T-303 體溫刀；O₂ 使用量乘 Q10 因子，守恆帳結構不變） */
+  CSL.MODEL_VERSION = '0.5.1';   /* 0.5.1：檢查點身分契約修復（T-316 刀 D2）——匯入驗證接受 co2BloodHigh 閾值事件、
+                                    exportRun 帶出 co2High/lastCo2、CO₂ 閾值補上文件所述遲滯；交換方程式與守恆帳結構不變。
+                                    0.5.0：新增 temperature 參數（T-303 體溫刀；O₂ 使用量乘 Q10 因子，守恆帳結構不變） */
   CSL.SCHEMA_VERSION = 1;
   CSL.DT = 1 / 30;                 // 固定模型時間步（模型秒／tick）
 
@@ -295,7 +297,7 @@
     w._lastTissueLevel = tLevel;
 
     /* CO₂ 閾值（遲滯：≥0.70 觸發、<0.60 解除）——模型指數警示，非臨床判讀 */
-    const co2High = w.co2.blood >= 0.70;
+    const co2High = w._co2High ? w.co2.blood >= 0.60 : w.co2.blood >= 0.70;
     if (co2High && !w._co2High) {
       CSL.emitEvent(w, {
         kind: 'threshold', regionId: 'TISSUE_CAP', ruleId: 'co2BloodHigh',
@@ -447,7 +449,7 @@
           if (typeof ev.regionId !== 'string') return 'bad-event-region';
           if (!handPayload(ev.before) || !handPayload(ev.after)) return 'bad-event-payload';
         } else if (ev.kind === 'threshold') {
-          if (ev.ruleId !== 'tissueStockLow') return 'bad-event-rule';
+          if (ev.ruleId !== 'tissueStockLow' && ev.ruleId !== 'co2BloodHigh') return 'bad-event-rule';
           if (!thrPayload(ev.before, false) || !thrPayload(ev.after, true)) return 'bad-event-payload';
         } else if (ev.kind !== 'system' && ev.kind !== 'tour') {
           return 'bad-event-kind';
@@ -502,6 +504,8 @@
       idSeq: w.idSeq, eventSeq: w.eventSeq,
       tissueLow: !!w._tissueLow,
       lastTissueLevel: w._lastTissueLevel == null ? null : w._lastTissueLevel,
+      co2High: !!w._co2High,
+      lastCo2: w._lastCo2 == null ? null : w._lastCo2,
       lastParamEvent: w._lastParamEvent || null,
       digestChainTail: w.digestChain.slice(-256),
     });
