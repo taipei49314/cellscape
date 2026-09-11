@@ -19,15 +19,17 @@ async function launchBrowser() {
   ];
   let lastErr;
   for (const opt of attempts) {
-    try { return await chromium.launch(opt); }
+    try { return { browser: await chromium.launch(opt), channel: opt.channel || 'playwright-chromium' }; }
     catch (e) { lastErr = e; }
   }
   throw lastErr;
 }
 const SAMPLE_MS = 8000;
+const pct = (sorted, p) => (sorted.length ? sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * p))] : null);
 
 (async () => {
-  const browser = await launchBrowser();
+  const launched = await launchBrowser();
+  const browser = launched.browser;
   const page = await (await browser.newContext({ viewport: { width: 1280, height: 800 } })).newPage();
   const pageErrors = [];
   page.on('pageerror', (e) => pageErrors.push(String(e)));
@@ -43,14 +45,30 @@ const SAMPLE_MS = 8000;
 
   const sample = await page.evaluate((ms) => new Promise((res) => {
     let frames = 0;
+    const deltas = [];
     const t0 = performance.now();
+    let prev = t0;
     const loop = () => {
+      const now = performance.now();
       frames++;
-      if (performance.now() - t0 < ms) requestAnimationFrame(loop);
-      else res({ frames, wallMs: performance.now() - t0 });
+      deltas.push(now - prev);
+      prev = now;
+      if (now - t0 < ms) requestAnimationFrame(loop);
+      else res({ frames, wallMs: performance.now() - t0, deltas });
     };
     requestAnimationFrame(loop);
   }), SAMPLE_MS);
+  const env = await page.evaluate(() => {
+    let renderer = 'unavailable';
+    try {
+      const gl = document.createElement('canvas').getContext('webgl');
+      const ext = gl && gl.getExtension('WEBGL_debug_renderer_info');
+      if (gl && ext) renderer = String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL));
+      else if (gl) renderer = String(gl.getParameter(gl.RENDERER));
+    } catch (e) { renderer = 'error: ' + String(e); }
+    return { renderer, ua: navigator.userAgent, perfLog: window.__perfLog || null,
+             loopErrors: (window.__loopErrors || []).length };
+  });
 
   const fps = sample.frames / (sample.wallMs / 1000);
   const ticks = await page.evaluate(() => {
@@ -61,6 +79,7 @@ const SAMPLE_MS = 8000;
   process.on('unhandledRejection', (e) => console.error('non-fatal unhandledRejection at close:', String(e)));
   await browser.close().catch(() => {});
 
+  const sortedDeltas = sample.deltas.slice(1).sort((a, b) => a - b);   // 首幀間隔含啟動抖動
   const out = {
     kind: 'cellscape-perf-baseline',
     date: new Date().toISOString(),
@@ -68,9 +87,19 @@ const SAMPLE_MS = 8000;
     sampleMs: SAMPLE_MS,
     frames: sample.frames,
     fps: Number(fps.toFixed(2)),
+    frameMs: {
+      p50: sortedDeltas.length ? Number(pct(sortedDeltas, 0.50).toFixed(2)) : null,
+      p95: sortedDeltas.length ? Number(pct(sortedDeltas, 0.95).toFixed(2)) : null,
+      max: sortedDeltas.length ? Number(sortedDeltas[sortedDeltas.length - 1].toFixed(2)) : null,
+      samples: sortedDeltas.length,
+    },
+    appPerfLog: env.perfLog,          // 產品自己的 #perfBadge 量測（median / p95 / samples）
+    browser: { channel: launched.channel, userAgent: env.ua, renderer: env.renderer },
     ticksAdvanced: ticks,
+    loopErrors: env.loopErrors,
     pageErrors,
-    pass: fps >= 2 && pageErrors.length === 0
+    note: 'vsync 鎖在 60fps 時 fps 會飽和；判退化請看 frameMs.p95 與 appPerfLog，不要只看 fps。門檻仍只擋災難性退化。',
+    pass: fps >= 2 && pageErrors.length === 0 && env.loopErrors === 0
   };
   const dest = path.join(__dirname, '..', 'docs', 'verification', 'perf-latest.json');
   fs.writeFileSync(dest, JSON.stringify(out, null, 1) + '\n');

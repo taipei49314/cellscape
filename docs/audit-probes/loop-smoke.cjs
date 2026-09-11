@@ -59,8 +59,8 @@ const check = (name, pass, detail) => { results.push({ name, pass, detail }); };
       const w = CSL.createWorld({ seed: 777 });
       for (let i = 0; i < 120; i++) {
         CSL.step(w);
-        if (i === 40) CSL.queueCommand(w, { kind:'param', key:'lungSupply', value:0.4, source:'user' });
-        if (i === 80) CSL.queueCommand(w, { kind:'param', key:'tissueDemand', value:0.9, source:'tour' });
+        if (i === 40) CSL.queueCommand(w, { kind:'setParam', key:'lungSupply', value:0.4, source:'user' });
+        if (i === 80) CSL.queueCommand(w, { kind:'setParam', key:'tissueDemand', value:0.9, source:'tour' });
         CSL.digestStep(w);
       }
       return w.digestChain;
