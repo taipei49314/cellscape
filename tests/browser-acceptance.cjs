@@ -67,6 +67,24 @@ const check = (name, pass, detail) => {
   check('search-hits-en-alias', /Red Blood Cell|紅血球/.test(hits));
   await page.locator('#atlasSearch').fill('');
 
+  check('temperature-slider-present', (await page.locator('#paramPanel input[data-key=temperature]').count()) === 1);
+
+  /* 主迴圈吞掉的例外：main.js 把 step/render 的錯誤收進 window.__loopErrors，
+     pageerror 監聽看不到，這裡直接讀。 */
+  check('loop-no-swallowed-errors', ((await page.evaluate(() => (window.__loopErrors || []).slice())) || []).length === 0,
+    JSON.stringify(await page.evaluate(() => (window.__loopErrors || []).slice())));
+
+  /* EN 切換：殼層字串換成英文，且切回不留殘留 */
+  await page.locator('#langToggle').click();
+  await page.waitForTimeout(800);
+  const enText = await page.locator('#atlasBody').innerText();
+  const enTab = await page.locator('body').innerText();
+  check('en-toggle-switches-shell', /Right now|How it works|Know it/.test(enTab), enTab.slice(0, 60).replace(/\s+/g, ' '));
+  check('en-claims-have-no-missing-key', !/undefined/.test(enText));
+  await page.locator('#langToggle').click();
+  await page.waitForTimeout(600);
+  check('zh-toggle-restores', /看此刻|懂機制|認識它/.test(await page.locator('body').innerText()));
+
   /* 匯出路徑：createObjectURL 被呼叫 */
   await page.evaluate(() => {
     window.__exp = 0;

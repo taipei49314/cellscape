@@ -222,6 +222,34 @@ const run = (s) => vm.runInContext(s, c, { timeout: 60000 });
   check('view-context-fields', r.keys===expect && r.frozen && !!r.contentVersion && !!r.obsVersion, JSON.stringify(r));
 }
 
+/* 9. EN 覆蓋層主張鍵與 content.js 完全同步（content-en.js:9 的規則機械化） */
+{
+  vm.runInContext(load('content-en.js'), c, { filename: 'content-en.js' });
+  const r = run(`(()=>{
+    const zh = Object.keys(CSL.Content.claims).sort();
+    const en = Object.keys((CSL.ContentEN && CSL.ContentEN.claims) || {}).sort();
+    const missing = zh.filter((k) => en.indexOf(k) < 0);
+    const extra = en.filter((k) => zh.indexOf(k) < 0);
+    return { nZh: zh.length, nEn: en.length, missing, extra,
+             mirrors: CSL.ContentEN && CSL.ContentEN.mirrors, contentVersion: CSL.Content.contentVersion };
+  })()`);
+  check('en-claims-keys-in-sync', r.missing.length === 0 && r.extra.length === 0 && r.nZh === r.nEn,
+    JSON.stringify(r));
+}
+
+/* 10. 每條主張至少被 UI 引用一次：問答的 claimIds，或 atlas.js 明列的補充清單 */
+{
+  const atlasSrc = load('atlas.js');
+  const r = run(`(()=>{
+    const C = CSL.Content;
+    const used = new Set();
+    for (const card of C.cards) for (const qa of card.qa) for (const cid of qa.claimIds) used.add(cid);
+    return { all: Object.keys(C.claims), used: Array.from(used) };
+  })()`);
+  const unref = r.all.filter((cid) => r.used.indexOf(cid) < 0 && atlasSrc.indexOf("'" + cid + "'") < 0);
+  check('claims-referenced-by-ui', unref.length === 0, unref.length ? 'unreferenced: ' + unref.join(', ') : String(r.all.length) + ' claims');
+}
+
 let fails = 0;
 console.log('=== v0.3 Atlas self-built tests ===');
 for (const r of results) { console.log((r.pass ? 'PASS' : 'FAIL') + '  ' + r.name + (r.pass ? '' : '   ' + r.detail)); if (!r.pass) fails++; }
