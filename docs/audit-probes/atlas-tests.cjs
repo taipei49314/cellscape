@@ -501,6 +501,57 @@ const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^
   }
 }
 
+/* 21–22. 細胞內部示意的內容治理（T-323）。對照 hemo.js：結構表每筆
+   非 claim（claimIds 可解析）即 illustrative（不得夾帶數量）；產品原始碼
+   不得再出現無主張背書的 pH 衍生或「四聚體」等未登錄詞彙。 */
+{
+  vm.runInContext(load('inside.js'), c, { filename: 'inside.js' });
+
+  /* 21. 每張卡的每一層非 claim 即 illustrative；claim 的 claimIds 必須
+         全部可解析；illustrative 不得夾帶數量或單位。 */
+  {
+    const r = run(`(()=>{
+      const cards = CSL.Inside.cards;
+      const ids = Object.keys(cards);
+      const bad = [];
+      let nLayers = 0;
+      for (const id of ids) {
+        const layers = cards[id].layers || [];
+        if (!layers.length) bad.push([id, 'empty-layers']);
+        for (const ly of layers) {
+          nLayers++;
+          if (ly.kind === 'claim') {
+            if (!ly.claimIds || !ly.claimIds.length) { bad.push([id + ':' + ly.id, 'claim-without-ids']); continue; }
+            for (const cid of ly.claimIds) if (!CSL.Content.claims[cid]) bad.push([id + ':' + ly.id, 'unresolved:' + cid]);
+          } else if (ly.kind === 'illustrative') {
+            if (/[0-9０-９]/.test(ly.zh)) bad.push([id + ':' + ly.id, 'illustrative-with-number']);
+          } else bad.push([id + ':' + ly.id, 'unknown-kind:' + ly.kind]);
+        }
+      }
+      return { nCards: ids.length, nLayers, bad };
+    })()`);
+    check('inside-layers-claim-or-illustrative',
+      r.nCards === 8 && r.nLayers > 0 && r.bad.length === 0, JSON.stringify(r));
+  }
+
+  /* 22. 未登錄／無背書字串不得出現在產品原始碼（剝註解後掃）。
+         四聚體在 hemo 禁用詞表已收；pH 公式是 T-323 刪除的無主張衍生。 */
+  {
+    const BANNED = /(四聚體|tetramer|模型 pH|model pH|pH 指數|pH index|7\.40\s*-\s*0\.35)/i;
+    const files = ['inside.js', 'atlas.js', 'content-en.js'];
+    const hits = [];
+    for (const f of files) {
+      const src = stripComments(load(f));
+      const m = src.match(BANNED);
+      if (m) hits.push([f, m[0]]);
+    }
+    /* 植入違規反向驗：真的寫回四聚體必須被抓到 */
+    const planted = stripComments('/* 說明 */ var x = "血紅素四聚體（示意）";').match(BANNED);
+    check('no-unbacked-ph-or-tetramer-in-product-src',
+      hits.length === 0 && !!planted, JSON.stringify({ hits, planted: planted && planted[0] }));
+  }
+}
+
 let fails = 0;
 console.log('=== v0.3 Atlas self-built tests ===');
 for (const r of results) { console.log((r.pass ? 'PASS' : 'FAIL') + '  ' + r.name + (r.pass ? '' : '   ' + r.detail)); if (!r.pass) fails++; }

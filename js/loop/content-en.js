@@ -89,7 +89,7 @@
       expandLedger: 'Expand conservation ledger and rule details',
       ledgerLine: 'Conservation ledger (checked every 30 ticks, residual ≤1e-6): initial {initial}, cumulative input {input}, usage {usage}, exhaled {expelled}, latest residual {residual}.',
       spo2Note: 'Percentages here are relative to model capacity, not SpO₂; rates are converted in model time (dt = 1/30 model-seconds).',
-      phLine: 'Blood CO₂ index {co2} · model pH index {ph} — model indices, not clinical values.'
+      co2Line: 'Blood CO₂ index {co2} — model index (C-model-co2), not a clinical value.'
     },
 
     capabilityLegend: {
