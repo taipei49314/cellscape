@@ -474,7 +474,7 @@
       const card = CSL.Content.cards.find((c) => c.id === this.activeCard);
       const claimIds = new Set();
       card.qa.forEach((qa) => qa.claimIds.forEach((cid) => claimIds.add(cid)));
-      if (this.activeCard === 'rbc') ['C-model-load', 'C-model-aggregate', 'C-model-lungsupply', 'C-model-flowspeed', 'C-model-tissuedemand', 'C-model-co2', 'C-model-temp', 'C-model-anemia', 'C-model-perfusion', 'C-model-rbc-turnover'].forEach((c) => claimIds.add(c));
+      if (this.activeCard === 'rbc') ['C-model-load', 'C-model-aggregate', 'C-model-lungsupply', 'C-model-flowspeed', 'C-model-tissuedemand', 'C-model-co2', 'C-model-temp', 'C-model-anemia', 'C-model-perfusion', 'C-model-rbc-turnover', 'C-model-altitude'].forEach((c) => claimIds.add(c));
       const K = { KL: CSL.K_LUNG, KT: CSL.K_TISSUE, KU: CSL.K_USE, DT: 1 / 30 };
       const rulesBlock = `
         <div class="note"><b>本版（MODEL_VERSION ${esc(CSL.MODEL_VERSION)}）的三種規則——文字與實作綁定：</b>
@@ -485,6 +485,7 @@
           <li>貧血上限：肺端裝載的可用容量為 (1 − anemia) × cap——只閘裝載上限，不改守恆帳結構（模型 0.3.0）。</li>
           <li>RBC 世代輪替：滿 ${CSL.RBC_MAX_LOOPS} 圈退役，殘餘負載記 expelled，同槽肺端替換（模型 0.8.0）；總量固定 48。</li>
           <li>CO₂ 與 Bohr：組織隨使用量生產 CO₂ 指數、肺端隨通氣排出；卸載側乘 Bohr 倍率（0.75–1.35 鉗位，穩態為 1）。血中 CO₂ ≥0.70 觸發模型指數警示，非臨床酸鹼判讀（模型 0.4.0）。</li>
+          <li>海拔：氣壓比值 (1 − 2.25577e-5·h)^5.25588 乘肺端輸入與裝載驅動；過度換氣因子乘 CO₂ 排出——高海拔＝遞送下降且 CO₂ 指數下降（模型 0.10.0；非高山醫學）。</li>
         </ul>
         負載欄位是攜帶狀態的近似——沒有逐分子結合、沒有血紅素解離曲線；動畫節奏不代表結合/解離時間。</div>`;
       return this._cardChips() + `

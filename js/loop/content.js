@@ -48,6 +48,10 @@
         url: 'https://www.nature.com/articles/s41591-023-02327-2',
         use: 'HLCA 的原始研究與資料方法；人體來源、組織、狀態需依具體子資料集記錄。',
         checkedOn: '2026-09-08' },
+      { id: 'S9', publisher: 'NCBI Bookshelf / StatPearls', title: 'High-Altitude Oxygenation',
+        url: 'https://www.ncbi.nlm.nih.gov/books/NBK539701/',
+        use: '高海拔大氣壓與氧分壓下降、通氣與適應反應的背景；不提供本模型係數（氣壓比值冪律為工程近似）。',
+        checkedOn: '2026-09-12' },
       { id: 'S8', publisher: 'The Human Protein Atlas', title: 'Licence & Citation',
         url: 'https://www.proteinatlas.org/about/licence',
         use: '資料庫可著作權部分的 CC BY 4.0 說明及第三方限制；每個採用素材仍要個別確認。',
@@ -301,6 +305,7 @@
       'C-model-perfusion':{ text: 'perfusion 在拓樸雙組織床（0.7.0）上再分配卸載通量：≤1 時主床×perfusion、次床×max(0,1−perfusion)，名目合計≈1；>1 全給主床。1.0＝0.6.0 單床行為。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/model.js EDGES perfusionSite；js/loop/core.js step() 組織端 flux', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.7.0；不是 mmHg 血壓、不是心輸出量；僅兩個建模組織床。' },
       'C-model-anemia':   { text: 'anemia 參數只閘肺端裝載上限（(1 − anemia) × 容量），不回溯調整已攜帶的氧，守恆帳結構不變。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/core.js step() 肺端 eCap', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.6.0；非血紅素濃度或血比容。' },
       'C-model-temp':     { text: '體溫以 Q10 因子（2^((T−37)/10)）乘 O₂ 使用速率；CO₂ 生產隨使用量連動。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/core.js step() q10 項', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.8.0；工程近似，非體溫調節模型。' },
+      'C-model-altitude': { text: '海拔以氣壓比值 (1 − 2.25577e-5·h)^5.25588 乘肺端輸入與裝載驅動，並以過度換氣因子 (1 + 0.6·(1−比值)) 乘 CO₂ 排出；為聚合模型指數近似，非個體生理。', contentType: 'model_assumption', sourceIds: ['S9'], implRef: 'js/loop/core.js step() 輸入項／肺端交換／CO₂ 排出', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.10.0；非高山醫學，非旅遊或健康建議。' },
       'C-model-rbc-turnover': { text: 'RBC 滿 RBC_MAX_LOOPS 圈後退役並在肺端同槽替換；殘餘負載記入 expelled，總量固定 48。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/model.js RBC_MAX_LOOPS；js/loop/core.js step() 3.5', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.8.0；世代輪替示意，非 120 天生理壽命校準。' }
     },
 
