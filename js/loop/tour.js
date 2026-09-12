@@ -86,7 +86,7 @@
       if (st.cam) a.setCamera(st.cam);
       if (st.say) a.subtitle(st.say(), 4.5);
       else if (st.sayOnMeet) a.subtitle(st.sayOnMeet(), 4.5);
-      else a.subtitle((T('s' + this.idx + '.say') || ('重播第 ' + (this.idx + 1) + ' 步說明。')), 4);
+      else a.subtitle('（重播第 ' + (this.idx + 1) + ' 步說明。）', 4);
       return true;
     },
 
