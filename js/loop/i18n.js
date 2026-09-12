@@ -129,5 +129,14 @@
     return s;
   }
 
-  CSL.I18n = { get, set, toggle, card, claimText, readout, cap, shell, now, tour, hemo, isEn, applyShell, LOCALES };
+  /* 章節控制器字串（T-321 刀 K2）：EN 缺鍵回 null，呼叫端退回繁中 */
+  function chapter(key, vars) {
+    const E = en() && en().chapters;
+    if (!(get() === 'en' && E && E[key])) return null;
+    let s = E[key];
+    if (vars) for (const k of Object.keys(vars)) s = s.split('{' + k + '}').join(String(vars[k]));
+    return s;
+  }
+
+  CSL.I18n = { get, set, toggle, card, claimText, readout, cap, shell, now, tour, hemo, chapter, isEn, applyShell, LOCALES };
 })(typeof window !== 'undefined' ? window : globalThis);
