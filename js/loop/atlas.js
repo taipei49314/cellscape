@@ -270,14 +270,15 @@
           || `目前卡片「${activeCard.name}」為${activeCard.capability === 'aggregate' ? '聚合近似' : '知識卡'}（本連動模式未個別模擬）；下方數值來自你選取的紅血球。`)}</div>`
         : '';
 
-      /* CO₂/pH 指數行（0.4.0）：模型指數，非臨床值；世界缺欄位時不顯示 */
+      /* CO₂ 指數行：只顯示已登錄的模型指數（C-model-co2）。
+         T-323：刪除無主張背書的「模型 pH 指數」衍生——claims 未授權推出 pH 數字。 */
       const co2Line = (() => {
         const c2 = (view && view.co2 && isFinite(view.co2.blood)) ? view.co2.blood : null;
         if (c2 == null) return '';
-        const ph = (7.40 - 0.35 * (c2 - 0.30) / 0.70).toFixed(2);
         const zhen = (CSL.I18n && CSL.I18n.get() === 'en')
-          ? `Blood CO₂ index ${c2.toFixed(2)} · model pH index ${ph} — model indices, not clinical values.`
-          : `血液 CO₂ 指數 ${c2.toFixed(2)} · 模型 pH 指數 ${ph}——模型指數，非臨床值。`;
+          ? (CSL.I18n.shell('co2Line', { co2: c2.toFixed(2) })
+            || `Blood CO₂ index ${c2.toFixed(2)} — model index (C-model-co2), not a clinical value.`)
+          : `血液 CO₂ 指數 ${c2.toFixed(2)}——模型指數（見 C-model-co2），非臨床值。`;
         return `<div class="nowLine dim">${esc(zhen)}</div>`;
       })();
 
@@ -485,7 +486,7 @@
         ${this.activeCard === 'rbc' ? '<div class="ill"><svg viewBox="0 0 240 90" role="img" aria-label="紅血球與血紅素示意">' +
           '<ellipse cx="70" cy="45" rx="46" ry="30" fill="#c0392b" opacity=".85"/><ellipse cx="70" cy="45" rx="18" ry="9" fill="#8e2a20" opacity=".9"/>' +
           '<text x="70" y="86" fill="#9fb6c9" font-size="9" text-anchor="middle">雙凹圓盤（示意）</text>' +
-          '<g transform="translate(150,20)"><circle cx="0" cy="0" r="9" fill="#e67e22"/><circle cx="22" cy="14" r="9" fill="#e67e22"/><circle cx="14" cy="34" r="9" fill="#e67e22"/><circle cx="-8" cy="38" r="9" fill="#e67e22"/><text x="14" y="60" fill="#9fb6c9" font-size="9" text-anchor="middle">血紅素四聚體（示意）</text></g></svg>' +
+          '<g transform="translate(150,20)"><circle cx="0" cy="0" r="9" fill="#e67e22"/><circle cx="22" cy="14" r="9" fill="#e67e22"/><circle cx="14" cy="34" r="9" fill="#e67e22"/><circle cx="-8" cy="38" r="9" fill="#e67e22"/><text x="14" y="60" fill="#9fb6c9" font-size="9" text-anchor="middle">血紅素（示意）</text></g></svg>' +
           '<div class="dim tiny">機制示意／非本次分子模擬；展開時此標記持續顯示。</div></div>' : ''}
         ${card.capability === 'dynamic' ? rulesBlock : `<div class="note">${esc(L('mech.knowledgeNote', '此卡為知識／結構說明；本連動世界的交換由聚合規則近似（見紅血球卡的規則區塊）。'))}</div>`}
         <div class="dim small">相關依據：</div>
