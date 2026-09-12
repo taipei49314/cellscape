@@ -484,7 +484,94 @@ const SETUP = `
     r.extravasations === 4 && r.cleared === 1 && r.remaining === 0, JSON.stringify(r));
 }
 
-console.log('=== model behaviour contracts (0.3.0 / 0.4.0 / 0.5.0 / 0.5.1 / 0.6.0 / 0.8.0 / 0.9.0 / 0.10.0 / 1.0.0 / 1.1.0) ===');
+/* 22. 血糖中立性（1.2.0／T-359）：glucoseIntake=0 與未設定的世界逐拍摘要全等，
+       且血糖指數恆 0、胰島素恆禁食基線 0.30、無 glucoseHigh／insulin_response 事件
+       （未修 core 無 glucose compartment——本檢查以探針錯誤落地＝fail-first 之一；
+       參數 no-op 未修 core 上的空洞通過風險由 23／24 行為斷言承擔）。 */
+{
+  const c = freshEnv();
+  const r = run(c, `(()=>{${SETUP}
+    const a = CSL.createWorld({ seed: 1701 });
+    applyParams(a, { glucoseIntake: 0 });
+    const b = CSL.createWorld({ seed: 1701 });
+    runTicks(b, 5);
+    for (let i = 0; i < 400; i++) { CSL.step(a); CSL.digestStep(a); CSL.step(b); CSL.digestStep(b); }
+    const same = a.digestChain.length === b.digestChain.length
+      && a.digestChain.every((v, i) => v === b.digestChain[i]);
+    const gStock = a.compartments.glucose ? a.compartments.glucose.stock : null;
+    const insLevel = a.insulin ? a.insulin.level : null;
+    const glucoseEvents = a.events.filter((e) => e.ruleId === 'glucoseHigh' || e.ruleId === 'insulin_response').length;
+    return { same, gStock, insLevel, glucoseEvents };
+  })()`);
+  check('glucose-neutral-at-default',
+    r.same === true && r.gStock === 0 && r.insLevel === 0.30 && r.glucoseEvents === 0, JSON.stringify(r));
+}
+
+/* 23. 進食—分泌—攝取（glucoseIntake=0.02）：血糖指數上升越過 0.55 ⇒ glucoseHigh 恰 1 筆、
+       insulin_response ≥1 筆、胰島素峰值 >0.5（觸發當下即計數——事件環 1000 筆，長跑後
+       早期事件會被逐出）；停食後指數回落 <0.10、遲滯解除、胰島素回禁食基線 0.30；
+       全程氧守恆不變（未修 core 無 insulin ⇒ 探針錯誤＝fail-first 牙齒）。 */
+{
+  const c = freshEnv();
+  const r = run(c, `(()=>{${SETUP}
+    const w = CSL.createWorld({ seed: 1802 });
+    if (!w.insulin || !w.compartments.glucose) return { noGlucose: true };
+    applyParams(w, { glucoseIntake: 0.02 });
+    let peakGlucose = 0, peakInsulin = 0, highFiredTick = -1;
+    for (let i = 0; i < 700 && peakInsulin <= 0.5; i++) {
+      CSL.step(w);
+      peakGlucose = Math.max(peakGlucose, w.compartments.glucose.stock);
+      peakInsulin = Math.max(peakInsulin, w.insulin.level);
+      if (highFiredTick < 0 && w.events.some((e) => e.ruleId === 'glucoseHigh')) highFiredTick = w.tick;
+    }
+    /* 事件環留最近 1000 筆：觸發類事件必須在觸發時窗內計數 */
+    const firedHigh = w.events.filter((e) => e.ruleId === 'glucoseHigh').length;
+    const firedResponse = w.events.filter((e) => e.ruleId === 'insulin_response').length;
+    applyParams(w, { glucoseIntake: 0 });   // 停食——胰島素仍處高位續行清除
+    for (let i = 0; i < 2300; i++) { CSL.step(w); peakInsulin = Math.max(peakInsulin, w.insulin.level); }
+    const L = w.glucoseLedger;
+    const gres = L.intake - L.uptake - w.compartments.glucose.stock;
+    return { highFiredTick, peakGlucose, peakInsulin,
+             firedHigh, firedResponse,
+             endGlucose: w.compartments.glucose.stock, endInsulin: w.insulin.level,
+             flagStillHigh: !!w._glucoseHigh, gres,
+             o2Residual: Math.abs(CSL.ledgerResidual(w)) };
+  })()`);
+  check('glucose-intake-raises-and-insulin-responds',
+    r.highFiredTick > 0 && r.peakGlucose > 2 && r.peakInsulin > 0.5
+      && r.firedHigh === 1 && r.firedResponse >= 1
+      && r.endGlucose < 0.10 && Math.abs(r.endInsulin - 0.30) < 1e-9 && r.flagStillHigh === false
+      && Math.abs(r.gres) <= 1e-6 && r.o2Residual <= 1e-6, JSON.stringify(r));
+}
+
+/* 24. 劑量等比與小帳收斂：glucoseIntake=0.02 的血糖峰值高於 0.01（兩者皆觸發 glucoseHigh），
+       兩世界 glucoseLedger 殘差與氧守恆殘差皆 ≤1e-6（未修 core 無 glucoseLedger ⇒ fail-first）。 */
+{
+  const c = freshEnv();
+  const r = run(c, `(()=>{${SETUP}
+    const at = (intake) => {
+      const w = CSL.createWorld({ seed: 1903 });
+      if (!w.glucoseLedger) return { peak: -1, gres: -1, o2: -1, highEvents: 0 };
+      applyParams(w, { glucoseIntake: intake });
+      let peak = 0;
+      for (let i = 0; i < 700; i++) { CSL.step(w); peak = Math.max(peak, w.compartments.glucose.stock); }
+      const L = w.glucoseLedger;
+      return { peak, gres: L.intake - L.uptake - w.compartments.glucose.stock,
+               highEvents: w.events.filter((e) => e.ruleId === 'glucoseHigh').length,
+               o2: Math.abs(CSL.ledgerResidual(w)) };
+    };
+    const low = at(0.01), high = at(0.02);
+    return { lowPeak: low.peak, highPeak: high.peak,
+             lowHighEvents: low.highEvents, highHighEvents: high.highEvents,
+             worstGres: Math.max(Math.abs(low.gres), Math.abs(high.gres)),
+             worstO2: Math.max(low.o2, high.o2) };
+  })()`);
+  check('glucose-dose-monotonic-and-ledger-closes',
+    r.highPeak > r.lowPeak && r.lowPeak > 0 && r.lowHighEvents >= 1 && r.highHighEvents >= 1
+      && r.worstGres <= 1e-6 && r.worstO2 <= 1e-6, JSON.stringify(r));
+}
+
+console.log('=== model behaviour contracts (0.3.0 / 0.4.0 / 0.5.0 / 0.5.1 / 0.6.0 / 0.8.0 / 0.9.0 / 0.10.0 / 1.0.0 / 1.1.0 / 1.2.0) ===');
 let fails = 0;
 for (const r of results) {
   console.log((r.pass ? 'PASS' : 'FAIL') + '  ' + r.name + '   ' + r.detail);
