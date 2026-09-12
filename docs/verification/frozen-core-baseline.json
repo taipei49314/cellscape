@@ -1,6 +1,6 @@
 {
   "kind": "cellscape-frozen-core-baseline",
-  "note": "T-325 基線；T-329 與 T-343/344 解凍後更新。T-347 軸 A 海拔（MODEL 0.10.0）更新 core.js。engine/data 仍為 T-325 釘定。unchanged-core.json 不改寫。",
+  "note": "T-325 基線；T-329 與 T-343/344 解凍後更新。T-347 軸 A 海拔（MODEL 0.10.0）更新 core.js 與 content.js（C-model-altitude＋S9）。engine/data 仍為 T-325 釘定。unchanged-core.json 不改寫。",
   "pinned_at_main": "31506887cef3c913cb434b8733d8d522a4df0f36",
   "pinned_at_utc": "2026-09-12T05:10:00Z",
   "files": {
@@ -8,7 +8,7 @@
     "js/loop/model.js": "d779fba758eb658eb7ddd60ef950e4dafbc3ed5282f35459ede8b85b15cb68b5",
     "js/loop/render.js": "a2f82ba92a3c6489d163bbd1b539dc2594969ae7ae3eed3f1398fba318576fdf",
     "js/loop/tour.js": "06e0ccca55d894c2036e978776b977f42fa35f148b416eaab667be327aa3f7ef",
-    "js/loop/content.js": "808ff86f09986de87932694d2782d3e9da78a2c37498c40c2df75478241d9015",
+    "js/loop/content.js": "f64d4d14df1a8407c287011c47029c6e70a1aa05672f0d4a592a459bcf7a16b7",
     "js/engine.js": "6168ed165da03d1d714ece1bbcf7bd33c8d5166a8b7e3874c79cd3d9b68d3ee0",
     "js/data.js": "8759c4cab657574a672b1423b1785e600a0af3dad244d0def36056c3997eae39"
   },
