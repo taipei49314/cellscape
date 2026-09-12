@@ -219,7 +219,7 @@
           const v = parseFloat(el.value);
           $('pv_' + key).textContent = key === 'altitudeM' ? String(Math.round(v)) : (key === 'fluidRate' ? v.toFixed(3) : v.toFixed(2));
           CSL.queueCommand(this.world, { kind: 'setParam', key, value: v, source: 'user' });
-          if (key === 'lungSupply' || key === 'anemia' || key === 'altitudeM' || key === 'fluidRate') this.ensureBranch();   // 首次介入建立 A/B
+          if (key === 'lungSupply' || key === 'anemia' || key === 'altitudeM' || key === 'fluidRate' || key === 'infection') this.ensureBranch();   // 首次介入建立 A/B
         });
       });
       /* 藥物介入快速預設：與滑桿同一 setParam 事件路徑（CSL.queueCommand 唯一入口），
@@ -231,9 +231,10 @@
         altitude: { params: { altitudeM: 4000 }, note: '藥物介入（模型）：登上高地——海拔設為 4000 m（吸入氧比例下降、過度換氣上升）。模型單位，非旅遊或健康建議。' },
         heatstroke: { params: { temperature: 40, fluidRate: 0 }, note: '藥物介入（模型）：中暑——體溫升至 40 °C 且無補水（出汗使容積下降、volFrac 調降流動與卸載）。模型單位，非用藥建議。' },
         infusion: { params: { fluidRate: 0.004 }, note: '藥物介入（模型）：靜脈輸液——補水速率 0.004／tick（回補容積）。模型單位，非用藥建議。' },
+        infection: { params: { infection: 1 }, note: '藥物介入（模型）：組織感染——嗜中性球自骨髓池招募、抵組織微血管外滲清除（每顆 0.125）。模型單位，非用藥建議。' },
         transfusion: { params: { anemia: 0 }, note: '藥物介入（模型）：輸血——貧血程度歸零（Hb 可用上限恢復）。模型單位，非用藥建議。' },
         antipyretic: { params: { temperature: 37 }, note: '藥物介入（模型）：退燒——體溫回復 37.0 °C。模型單位，非用藥建議。' },
-        baseline: { params: { lungSupply: 0.85, flowSpeed: 1, tissueDemand: 0.5, anemia: 0, temperature: 37, perfusion: 1, altitudeM: 0, fluidRate: 0 }, note: '藥物介入（模型）：參數回復基準值（含貧血、體溫、灌流、海拔與補水）。' },
+        baseline: { params: { lungSupply: 0.85, flowSpeed: 1, tissueDemand: 0.5, anemia: 0, temperature: 37, perfusion: 1, altitudeM: 0, fluidRate: 0, infection: 0 }, note: '藥物介入（模型）：參數回復基準值（含貧血、體溫、灌流、海拔、補水與感染）。' },
       };
       document.querySelectorAll('#drugPanel .drug').forEach((el) => {
         el.addEventListener('click', () => {
