@@ -7,4 +7,4 @@ for(const script of ['docs/audit-probes/atlas-tests.cjs','docs/audit-probes/loop
   if(r.error){console.error(r.error);process.exit(1)}
   if(r.status!==0)process.exit(r.status||1);
 }
-console.log('44 scoped checks passed. Browser, deployment and biology are separate acceptance scopes.');
+console.log('45 scoped checks passed. Browser, deployment and biology are separate acceptance scopes.');
