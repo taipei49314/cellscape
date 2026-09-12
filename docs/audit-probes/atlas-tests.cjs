@@ -278,7 +278,8 @@ const run = (s) => vm.runInContext(s, c, { timeout: 60000 });
     /* 序列點落在 SAMPLE_EVERY 的倍數上，readout() 則以當前 tick 為右端；
        先把模型時鐘推到取樣點，兩者的窗口右端才是同一個 tick。 */
     while (w.tick % O.SAMPLE_EVERY !== 0) { CSL.step(w); O.recordTick(w, B, null); }
-    const s = O.rateSeries({ tick: w.tick }, B);
+    const seriesTick = w.tick;   // 之後的斷裂情節會推進時鐘，比對要用取序列當下的 tick
+    const s = O.rateSeries({ tick: seriesTick }, B);
     const last = s.points[s.points.length - 1];
     const rl = O.readout(w, B, null, 'flux_lung_rate');
     const rt = O.readout(w, B, null, 'flux_tissue_rate');
@@ -294,8 +295,8 @@ const run = (s) => vm.runInContext(s, c, { timeout: 60000 });
     O.rateSeries({ tick: w.tick }, B);
     return {
       earlyAllMissing, earlyAvailable: early.available,
-      lastAlignedToNow: !!last && last.t === w.tick,
-      matchesReadout: last && !last.missing && last.t === w.tick && near(last.lung, rl.value) && near(last.tissue, rt.value) && near(last.usage, ru.value),
+      lastAlignedToNow: !!last && last.t === seriesTick,
+      matchesReadout: last && !last.missing && last.t === seriesTick && near(last.lung, rl.value) && near(last.tissue, rt.value) && near(last.usage, ru.value),
       windowTicks: s.window.ticks, observed: s.observedPoints, total: s.totalPoints,
       noInterpolation: s.points.every((p) => p.missing || (isFinite(p.lung) && isFinite(p.tissue) && isFinite(p.usage))),
       someMissingAfterGap,
