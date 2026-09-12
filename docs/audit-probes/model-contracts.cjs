@@ -137,22 +137,31 @@ const SETUP = `
   check('param-limits-clamp-to-exported-limits', r.clamped && r.inRange, JSON.stringify(r));
 }
 
-/* 7. 凍結基線守門：unchanged-core.json 中仍相符的四檔不得被動到。
-      core.js／content.js（T-303、T-316 刀 D2）與 tour.js（T-316 刀 D3）已由
-      具名局部解凍修改過；基線檔是不改寫的歷史收據，故此處只守其餘四檔，
-      並如實列出例外。要恢復全七檔守門，需要人類另行裁定新的凍結基線。 */
+/* 7. 凍結基線守門（T-325 恢復全七檔）：以 frozen-core-baseline.json 釘定
+      main 31506887 七檔 SHA-256。歷史收據 unchanged-core.json 不改寫、不參與
+      本檢查；core/content/tour 的解凍遺留已由新基線吸收。再改任一檔須人類
+      具名解凍並另建基線。 */
 {
-  const baseline = JSON.parse(fs.readFileSync(path.join(root, 'docs/verification/unchanged-core.json'), 'utf8'));
+  const baselinePath = path.join(root, 'docs/verification/frozen-core-baseline.json');
+  const baseline = JSON.parse(fs.readFileSync(baselinePath, 'utf8'));
   const map = baseline.files || baseline;
-  const exempt = ['js/loop/core.js', 'js/loop/content.js', 'js/loop/tour.js'];
+  const files = [
+    'js/loop/core.js', 'js/loop/model.js', 'js/loop/render.js', 'js/loop/tour.js',
+    'js/loop/content.js', 'js/engine.js', 'js/data.js'
+  ];
   const drift = [];
-  for (const [file, expected] of Object.entries(map)) {
-    if (exempt.includes(file)) continue;
+  for (const file of files) {
+    const expected = map[file];
+    if (!expected) { drift.push({ file, error: 'missing-from-baseline' }); continue; }
     const actual = crypto.createHash('sha256').update(fs.readFileSync(path.join(root, file))).digest('hex');
     if (actual !== String(expected).replace(/^sha256:/, '')) drift.push({ file, expected, actual });
   }
-  check('unchanged-core-remaining-files-intact', drift.length === 0,
-    drift.length ? JSON.stringify(drift) : 'exempt (named unfreeze): ' + exempt.join(', '));
+  const extra = Object.keys(map).filter((k) => !files.includes(k));
+  check('frozen-core-baseline-intact',
+    drift.length === 0 && extra.length === 0 && files.every((f) => !!map[f]),
+    drift.length || extra.length
+      ? JSON.stringify({ drift, extra })
+      : 'all 7 files match frozen-core-baseline.json @ main 31506887');
 }
 
 /* 8. CO₂ 閾值事件必須能匯出→匯入→續行（T-316 刀 D2 的迴歸）。

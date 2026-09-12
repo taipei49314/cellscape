@@ -1,0 +1,15 @@
+{
+  "kind": "cellscape-frozen-core-baseline",
+  "note": "T-325 新基線：以 cellscape main 31506887（T-323 合併後）七檔現況 SHA-256 釘定，恢復全七檔守門。歷史收據 unchanged-core.json 不改寫。再改任一凍結檔須人類具名解凍並另建基線。",
+  "pinned_at_main": "31506887cef3c913cb434b8733d8d522a4df0f36",
+  "pinned_at_utc": "2026-09-12T03:45:00Z",
+  "files": {
+    "js/loop/core.js": "665ebcf52905441f5ae6875ae7b6c3ad53e5bf8bcb12706f2c3dd32502eb2a07",
+    "js/loop/model.js": "939af49cc8242ae78657d49f09369698b0ce30b2222d39869a54c7362255e1de",
+    "js/loop/render.js": "135f0d66ad901ee23c031412d0453a84be84b21f190a7ba91af5526fd6cef5e0",
+    "js/loop/tour.js": "d33008939ba19aff50da558145f2049caebd8376a04be2c801212c43b8299bb4",
+    "js/loop/content.js": "cdacc2e66bf91e2e81002830ef5e45ca10798bfa57b4eab063d7487657ca895c",
+    "js/engine.js": "6168ed165da03d1d714ece1bbcf7bd33c8d5166a8b7e3874c79cd3d9b68d3ee0",
+    "js/data.js": "8759c4cab657574a672b1423b1785e600a0af3dad244d0def36056c3997eae39"
+  }
+}
