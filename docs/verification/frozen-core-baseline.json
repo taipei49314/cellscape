@@ -1,16 +1,17 @@
 {
   "kind": "cellscape-frozen-core-baseline",
-  "note": "T-325 新基線（main 31506887）；T-329 刀 F1 具名解凍 tour.js 後於本 PR 更新 tour 雜湊。其餘六檔不變。歷史收據 unchanged-core.json 不改寫。",
+  "note": "T-325 基線；T-329 F1 解凍 tour.js、F2 解凍 core/model/content（EDGES 雙床＋MODEL 0.7.0）。render/engine/data 仍為 T-325 釘定。unchanged-core.json 不改寫。",
   "pinned_at_main": "31506887cef3c913cb434b8733d8d522a4df0f36",
-  "pinned_at_utc": "2026-09-12T04:20:00Z",
+  "pinned_at_utc": "2026-09-12T04:40:00Z",
   "files": {
-    "js/loop/core.js": "665ebcf52905441f5ae6875ae7b6c3ad53e5bf8bcb12706f2c3dd32502eb2a07",
-    "js/loop/model.js": "939af49cc8242ae78657d49f09369698b0ce30b2222d39869a54c7362255e1de",
+    "js/loop/core.js": "880a2611903bafb90885157d3e38debc9c843d69b67291895223c7dde26468d6",
+    "js/loop/model.js": "0971578a298f6f212bf8a7ad96695e8fb685ca7d60e2fb939ea41cc6c3478570",
     "js/loop/render.js": "135f0d66ad901ee23c031412d0453a84be84b21f190a7ba91af5526fd6cef5e0",
     "js/loop/tour.js": "06e0ccca55d894c2036e978776b977f42fa35f148b416eaab667be327aa3f7ef",
-    "js/loop/content.js": "cdacc2e66bf91e2e81002830ef5e45ca10798bfa57b4eab063d7487657ca895c",
+    "js/loop/content.js": "18016a3be19f916425473bec721e193d11b188dcab5abbe7991d22cd452376e4",
     "js/engine.js": "6168ed165da03d1d714ece1bbcf7bd33c8d5166a8b7e3874c79cd3d9b68d3ee0",
     "js/data.js": "8759c4cab657574a672b1423b1785e600a0af3dad244d0def36056c3997eae39"
   },
-  "f1_tour_unfreeze": "T-329 named: chapter A skip/prev/step-replay navigation only"
+  "f1_tour_unfreeze": "T-329 named: chapter A skip/prev/step-replay navigation only",
+  "f2_dual_bed": "T-329 named unfreeze + MODEL_VERSION 0.7.0"
 }

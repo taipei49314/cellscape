@@ -15,7 +15,9 @@
      （MODEL_RULE_IDENTITY 契約）。
      0.2.2：digest 納入 eventSeq（DIGEST_SCOPE 修復）＋事件 kind 相依 payload
      深驗證。舊包之 digestChainTail 以舊正規化計算，無法跨版延續，故顯式拒絕。 */
-  CSL.MODEL_VERSION = '0.6.0';   /* 0.6.0：新增 perfusion 參數（T-317 D4 血流再分配；只乘組織端卸載通量，1.0＝0.5.1 行為，
+  CSL.MODEL_VERSION = '0.7.0';   /* 0.7.0：拓樸版血流再分配（T-329 刀 F2）——EDGES 新增 TISSUE_CAP_2 次要組織床；
+     perfusion≤1 時主床乘 perfusion、次床乘 max(0,1−perfusion)，合計名目血流≈1；perfusion>1 全給主床。1.0＝0.6.0 單床行為。
+     0.6.0：新增 perfusion 參數（T-317 D4 血流再分配；只乘組織端卸載通量，1.0＝0.5.1 行為，
                                     守恆帳結構與 digest 正規化不變；參數界限新增一鍵，舊包依版本閘拒絕）。
                                     0.5.1：檢查點身分契約修復（T-316 刀 D2）——匯入驗證接受 co2BloodHigh 閾值事件、
                                     exportRun 帶出 co2High/lastCo2、CO₂ 閾值補上文件所述遲滯；交換方程式與守恆帳結構不變。
@@ -252,11 +254,15 @@
         /* Bohr 效應近似（0.4.0）：血中 CO₂ 高 ⇒ 卸載更容易（曲線右移）；
            倍率鉗位 [0.75, 1.35]，0.30 穩態時＝1（與 0.3.0 行為一致）。 */
         const bohr = Math.min(1.35, Math.max(0.75, 1 + 0.8 * (w.co2.blood - 0.30)));
-        /* 血流再分配（0.6.0）：perfusion＝流向這個組織床的血流比例，只乘組織端卸載通量；
-           1.0＝0.5.1 行為。這不是 mmHg 血壓、不是心輸出量；本模型只有一個組織床，
-           「再分配」只表現為這個床拿到的比例，其餘血管床未建模。 */
+        /* 血流再分配（0.6.0 單床；0.7.0 拓樸雙床）：
+           perfusion≤1：主床×perfusion、次床×max(0,1−perfusion)，名目合計≈1；
+           perfusion>1：全給主床。不是 mmHg、不是心輸出量。 */
+        const site = (CSL.EDGES[e.edge] && CSL.EDGES[e.edge].perfusionSite) || 'primary';
+        const pMul = site === 'secondary'
+          ? Math.max(0, 1 - w.params.perfusion)
+          : w.params.perfusion;
         let flux = Math.min(
-          CSL.K_TISSUE * Math.max(0, e.load - level) * demand * bohr * w.params.perfusion,
+          CSL.K_TISSUE * Math.max(0, e.load - level) * demand * bohr * pMul,
           e.load, Math.max(0, tis.capacity - tis.stock)
         );
         e.load -= flux; tis.stock += flux;
