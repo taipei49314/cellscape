@@ -35,6 +35,61 @@
       if (this.api) this.api.subtitle(null);
     },
 
+    /* ---------- 章節 A 導覽控制（T-329 刀 F1；解凍 tour.js） ----------
+       跳步／回上一步／單步重播只改導覽指標與字幕／鏡頭；
+       不虛構模型事件、不重放已完成的 onEnter 副作用（_tourLowed／
+       _tourRestored）、不呼叫 queueCommand。單步重播＝重播本步說明。 */
+
+    /* 進入第 n 步（0-based）。forward 且該步 onEnter 尚未跑過才觸發副作用。 */
+    goto(n, api) {
+      if (!this.active || !this.steps.length) return false;
+      const a = api || this.api;
+      const target = Math.max(0, Math.min(n | 0, this.steps.length - 1));
+      const prev = this.idx;
+      const st = this.steps[target];
+      this.idx = target;
+      this.waited = 0;
+      if (st.cam && a) a.setCamera(st.cam);
+      const side = st.onEnter;
+      const already =
+        (target === 4 && this.world && this.world._tourLowed === true) ||
+        (target === 6 && this.world && this.world._tourRestored === true);
+      if (side && target >= prev && !already && this.world && a) {
+        side(this.world, a);
+      } else if (st.say && a) {
+        a.subtitle(st.say(), 4.5);
+      } else if (st.sayOnMeet && a) {
+        a.subtitle(st.sayOnMeet(), 4.5);
+      }
+      return true;
+    },
+
+    /* 跳到下一步：只前進指標，不宣稱 until 已成立（誠實：不發 sayOnMeet）。 */
+    next(api) {
+      if (!this.active) return false;
+      if (this.idx >= this.steps.length - 1) return false;
+      return this.goto(this.idx + 1, api);
+    },
+
+    prev(api) {
+      if (!this.active || this.idx <= 0) return false;
+      return this.goto(this.idx - 1, api);
+    },
+
+    /* 單步重播：重設等待計數並重播本步說明；不重跑 onEnter 副作用。 */
+    replayStep(api) {
+      if (!this.active) return false;
+      const a = api || this.api;
+      const st = this.steps[this.idx];
+      if (!st || !a) return false;
+      this.waited = 0;
+      if (st.cam) a.setCamera(st.cam);
+      if (st.say) a.subtitle(st.say(), 4.5);
+      else if (st.sayOnMeet) a.subtitle(st.sayOnMeet(), 4.5);
+      else a.subtitle((T('s' + this.idx + '.say') || ('重播第 ' + (this.idx + 1) + ' 步說明。')), 4);
+      return true;
+    },
+
     _buildSteps(followedId) {
       const id = followedId;
       const has = (w) => w.entities[id];

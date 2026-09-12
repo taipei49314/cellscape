@@ -552,6 +552,47 @@ const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^
   }
 }
 
+/* 23. 章節 A 導覽控制（T-329 刀 F1）：goto/next/prev/replayStep 只改指標；
+       不重跑已完成的 onEnter 副作用、不虛構 until、導覽未啟動時拒絕。 */
+{
+  const tourSrc = load('tour.js');
+  vm.runInContext(tourSrc, c, { filename: 'tour.js' });
+  const r = run(`(()=>{
+    const w = CSL.createWorld({ seed: 9090 });
+    const subs = [], cams = [];
+    const api = { subtitle: (t) => subs.push(t), setCamera: (v) => cams.push(v),
+                  enableBranch: () => {}, tourDone: () => {} };
+    CSL.Tour.start(w, api, 1);
+    const total = CSL.Tour.steps.length;
+    const beforeCmds = w.actions.length;
+    const idx0 = CSL.Tour.idx;
+    CSL.Tour.next(api);
+    const idxAfterNext = CSL.Tour.idx;
+    CSL.Tour.prev(api);
+    const idxAfterPrev = CSL.Tour.idx;
+    CSL.Tour.replayStep(api);
+    const idxAfterReplay = CSL.Tour.idx;
+    /* 跳到第 4 步（onEnter 會設 _tourLowed）；再 goto 同一步不得重複下指令 */
+    CSL.Tour.goto(4, api);
+    const lowered1 = w._tourLowed === true;
+    const cmdsAfter4 = w.actions.length;
+    CSL.Tour.goto(4, api);
+    const cmdsAfter4Again = w.actions.length;
+    const stopped = (() => { CSL.Tour.stop(); return CSL.Tour.goto(0, api) === false; })();
+    return { total, idx0, idxAfterNext, idxAfterPrev, idxAfterReplay,
+             lowered1, cmdsAfter4, cmdsAfter4Again, stopped,
+             advanced: idxAfterNext === idx0 + 1 && idxAfterPrev === idx0,
+             replayKeptIdx: idxAfterReplay === idxAfterPrev,
+             noRepeatOnEnter: cmdsAfter4Again === cmdsAfter4,
+             hasNavApi: typeof CSL.Tour.next === 'function' && typeof CSL.Tour.prev === 'function'
+               && typeof CSL.Tour.replayStep === 'function' && typeof CSL.Tour.goto === 'function',
+             subs: subs.length };
+  })()`);
+  check('tour-nav-goto-prev-next-replay',
+    r.total === 8 && r.advanced && r.replayKeptIdx && r.lowered1 && r.noRepeatOnEnter
+      && r.stopped && r.hasNavApi && r.subs > 0, JSON.stringify(r));
+}
+
 let fails = 0;
 console.log('=== v0.3 Atlas self-built tests ===');
 for (const r of results) { console.log((r.pass ? 'PASS' : 'FAIL') + '  ' + r.name + (r.pass ? '' : '   ' + r.detail)); if (!r.pass) fails++; }

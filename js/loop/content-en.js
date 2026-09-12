@@ -20,6 +20,9 @@
     shell: {
       'tab.know': 'Know it', 'tab.now': 'Right now', 'tab.mech': 'How it works', 'tab.src': 'Sources',
       'nav.follow': '◎ Follow a red blood cell',
+      'tour.prev': '◀ Previous step',
+      'tour.replay': '↻ Replay this step',
+      'tour.next': 'Next step ▶',
       'learn.entry': '📘 Learning chapters',
       'hemo.entry': '🔎 Hemoglobin zoom (model field)',
       'params.perfusion': 'Tissue perfusion',

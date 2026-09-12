@@ -101,6 +101,7 @@
       CSL.Tour.start(this.world, this.api, best.id);
       CSL.Render.setView('FOLLOW', this.world, best.id);   // 跟隨視角由 UI/導覽觸發
       this._inspector(true);
+      if (this._syncTourNav) this._syncTourNav();
     },
 
     setMode(m) {
@@ -109,6 +110,7 @@
       document.querySelectorAll('#paramPanel input').forEach((el) => { el.disabled = (m === 'tour'); });
       if (m === 'explore') CSL.Tour.stop();
       $('exploreBtn').classList.toggle('on', m === 'explore');
+      if (this._syncTourNav) this._syncTourNav();
     },
 
     /* ---------- A/B 分支 ---------- */
@@ -143,6 +145,22 @@
     _bind() {
       $('followBtn').addEventListener('click', () => this.followNextRBC());
       $('exploreBtn').addEventListener('click', () => this.setMode('explore'));
+      /* T-329 F1：章節 A 跳步／回上一步／單步重播（解凍 tour.js 的導覽指標） */
+      const tourNav = () => document.getElementById('tourNav');
+      const syncTourNav = () => {
+        const el = tourNav();
+        if (!el) return;
+        const on = this.mode === 'tour' && CSL.Tour && CSL.Tour.active;
+        el.classList.toggle('hidden', !on);
+        el.hidden = !on;
+      };
+      this._syncTourNav = syncTourNav;
+      const tPrev = document.getElementById('tourPrev');
+      const tNext = document.getElementById('tourNext');
+      const tReplay = document.getElementById('tourReplay');
+      if (tPrev) tPrev.addEventListener('click', () => { CSL.Tour.prev(this.api); syncTourNav(); });
+      if (tNext) tNext.addEventListener('click', () => { CSL.Tour.next(this.api); syncTourNav(); });
+      if (tReplay) tReplay.addEventListener('click', () => { CSL.Tour.replayStep(this.api); syncTourNav(); });
       $('btnPause2').addEventListener('click', () => {
         this.paused = !this.paused;
         $('btnPause2').textContent = this.paused ? '▶' : '❚❚';
