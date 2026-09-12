@@ -339,7 +339,8 @@ const run = (s) => vm.runInContext(s, c, { timeout: 60000 });
          引用自 CSL.Content 的正本文字（主張 text／supportedLimit／readout note）
          不在此限——那些是已登錄的措辭，本探針要抓的是模組順手多講的生理學。 */
   {
-    const BANNED = /(SpO|飽和度|saturation|解離曲線|dissociation|P50|四聚體|tetramer|結合位|binding site|協同|cooperativ|2,3-DPG|血比容|h(a)?ematocrit|mmHg|血氧分壓|臨床|clinical|診斷|正常值)/i;
+    /* 詞界要收緊：第一版用 /SpO/ 會命中英文的 "corre_spo_nd"（pool run 已實際誤判一次）。 */
+    const BANNED = /(SpO[₂ 2]|飽和度|saturation|解離曲線|dissociation|P50|四聚體|tetramer|結合位|binding site|協同|cooperativ|2,3-DPG|血比容|h(a)?ematocrit|mmHg|血氧分壓|臨床|clinical|診斷|正常值)/i;
     const r = run(`(()=>{
       const hits = [];
       for (const ly of CSL.Hemo.LAYERS) if (${BANNED.toString()}.test(ly.zh)) hits.push(['layer:' + ly.id, ly.zh]);
