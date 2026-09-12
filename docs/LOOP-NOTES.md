@@ -2,6 +2,7 @@
 
 ## 執行
 
+- 線上試用：<https://taipei49314.github.io/cellscape/>（GitHub Pages，根目錄進 Living Atlas）。
 - 根目錄 `/` 與 `index.html` 進入 Living Atlas（轉到 `loop.html`）。Windows 可用 `start.bat`。
 - 本地靜態開啟：`python -m http.server 8642 --bind 127.0.0.1`，然後開 `http://127.0.0.1:8642/loop.html`。
 - `museum.html` 的八個場景為**既有獨立場景**（r4 基線，未與新世界連動；歷史文件曾稱 `index.html`）；
