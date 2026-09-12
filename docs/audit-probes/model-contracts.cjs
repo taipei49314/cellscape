@@ -360,7 +360,75 @@ const SETUP = `
   check('altitude-hyperventilation-lowers-co2', r.drops && r.nonNegative, JSON.stringify(r));
 }
 
-console.log('=== model behaviour contracts (0.3.0 / 0.4.0 / 0.5.0 / 0.5.1 / 0.6.0 / 0.8.0 / 0.9.0 / 0.10.0) ===');
+/* 16. 容積中立性（1.0.0／T-350）：fluidRate=0 且 37°C 下，含容積機制的世界
+       與未設定的世界逐拍摘要全等（volFrac=1；未修 core 無 volume compartment，
+       本檢查以探針錯誤落地＝fail-first 之一）。 */
+{
+  const c = freshEnv();
+  const r = run(c, `(()=>{${SETUP}
+    const a = CSL.createWorld({ seed: 1201 });
+    applyParams(a, { fluidRate: 0 });
+    const b = CSL.createWorld({ seed: 1201 });
+    runTicks(b, 5);
+    for (let i = 0; i < 400; i++) { CSL.step(a); CSL.digestStep(a); CSL.step(b); CSL.digestStep(b); }
+    const same = a.digestChain.length === b.digestChain.length
+      && a.digestChain.every((v, i) => v === b.digestChain[i]);
+    const volA = a.compartments.volume ? a.compartments.volume.stock : null;
+    return { same, volA, volFull: volA != null && Math.abs(volA - 5) < 1e-9 };
+  })()`);
+  check('volume-neutral-at-default', r.same === true && r.volFull === true, JSON.stringify(r));
+}
+
+/* 17. 出汗排水與容積小帳收斂：41°C 無補水 ⇒ 容積單調下降、sweat 入帳、
+       容積殘差收斂（intake − sweat − (stock − 5.0)）、volumeLow 閾值事件觸發。 */
+{
+  const c = freshEnv();
+  const r = run(c, `(()=>{${SETUP}
+    const w = CSL.createWorld({ seed: 1301 });
+    if (!w.compartments.volume) return { noVolume: true };   // 未修 core：無容積 compartment
+    applyParams(w, { temperature: 41, fluidRate: 0 });
+    let prev = 5, monotonicDown = true, minVol = 5;
+    for (let i = 0; i < 2000; i++) {           // 2000 tick：0.0008/tick 排水至 ~3.4，恰好越過 0.70 門檻
+      CSL.step(w);
+      const v = w.compartments.volume.stock;
+      if (v > prev + 1e-12) monotonicDown = false;
+      prev = v; minVol = Math.min(minVol, v);
+    }
+    const L = w.volumeLedger;
+    const vres = L.intake - L.sweat - (w.compartments.volume.stock - 5.0);
+    /* 事件環留最近 1000 筆：2000 tick 內 crossing（~1875）仍在環內可驗 */
+    const lowEvents = w.events.filter((e) => e.kind === 'threshold' && e.ruleId === 'volumeLow').length;
+    return { monotonicDown, minVol, vol: w.compartments.volume.stock, flagLow: !!w._volumeLow,
+             intake: L.intake, sweat: L.sweat, vres,
+             lowEvents, o2Residual: Math.abs(CSL.ledgerResidual(w)) };
+  })()`);
+  check('sweat-drains-and-ledger-closes',
+    r.monotonicDown && r.minVol < 3.5 && r.vol < 3.5 && r.flagLow === true && r.lowEvents >= 1
+      && Math.abs(r.vres) <= 1e-6 && r.sweat > 0 && r.intake === 0 && r.o2Residual <= 1e-6, JSON.stringify(r));
+}
+
+/* 18. 低血容降低遞送：同 39.5°C 下，補水維持容積者累積使用量高於無補水者
+       （volFrac 調降流動與卸載），兩者氧守恆殘差 ≤1e-6。 */
+{
+  const c = freshEnv();
+  const r = run(c, `(()=>{${SETUP}
+    const at = (fluid) => {
+      const w = CSL.createWorld({ seed: 2468 });
+      if (!w.compartments.volume) return { usage: -1, vol: -1, residual: -1 };   // 未修 core
+      applyParams(w, { temperature: 39.5, fluidRate: fluid });
+      runTicks(w, 1200);
+      return { usage: w.ledger.usage, vol: w.compartments.volume.stock,
+               residual: Math.abs(CSL.ledgerResidual(w)) };
+    };
+    const dry = at(0), hydrated = at(0.01);
+    return { dryU: dry.usage, hydU: hydrated.usage, dryV: dry.vol, hydV: hydrated.vol,
+             residual: Math.max(dry.residual, hydrated.residual) };
+  })()`);
+  check('hypovolemia-reduces-delivery',
+    r.hydV > r.dryV && r.hydU > r.dryU && r.residual <= 1e-6, JSON.stringify(r));
+}
+
+console.log('=== model behaviour contracts (0.3.0 / 0.4.0 / 0.5.0 / 0.5.1 / 0.6.0 / 0.8.0 / 0.9.0 / 0.10.0 / 1.0.0) ===');
 let fails = 0;
 for (const r of results) {
   console.log((r.pass ? 'PASS' : 'FAIL') + '  ' + r.name + '   ' + r.detail);

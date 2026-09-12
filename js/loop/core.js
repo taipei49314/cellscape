@@ -15,7 +15,13 @@
      （MODEL_RULE_IDENTITY 契約）。
      0.2.2：digest 納入 eventSeq（DIGEST_SCOPE 修復）＋事件 kind 相依 payload
      深驗證。舊包之 digestChainTail 以舊正規化計算，無法跨版延續，故顯式拒絕。 */
-  CSL.MODEL_VERSION = '0.10.0';  /* 0.10.0：生理縱深第一軸——海拔／吸入氧（T-347）。新增參數
+  CSL.MODEL_VERSION = '1.0.0';   /* 1.0.0：生理縱深第二軸——血量／脫水（T-350）。新 compartment
+     volume（0–5.0，初始等容 5.0）：補水參數 fluidRate（0–0.02／tick）流入、溫度衍生出汗
+     0.0002×max(0, temperature−37) 流出；容積比 volFrac 乘移動流速與組織端卸載通量（等容 1.0＝
+     行為中立）；volumeLow 閾值事件（volFrac <0.70 觸發、≥0.80 解除遲滯）；容積獨立小帳
+     intake/sweat 每 30 tick 殘差檢查。新 compartment／digest 結構＝身分契約變更，0.10.0 舊包
+     匯入顯式拒絕。
+     0.10.0：生理縱深第一軸——海拔／吸入氧（T-347）。新增參數
      altitudeM（0–6000 m，預設 0）：氣壓比值 o2Press=(1−2.25577e-5·h)^5.25588（海平面=1）
      乘外部輸入項與肺端裝載驅動；CO₂ 排出項乘高地過度換氣因子 (1+0.6·(1−o2Press))
      ——模型指數近似，非個體生理。params 入 digest ⇒ 新參數即身分契約變更，升版後
@@ -77,12 +83,14 @@
       branchOf: opts.branchOf || null,
       tick: 0,
       rng: new Rng(seed).getState(),          // 模型 RNG 狀態（唯一；視覺 RNG 在渲染層）
-      params: { lungSupply: 0.85, flowSpeed: 1.0, tissueDemand: 0.5, anemia: 0, temperature: 37.0, perfusion: 1.0, altitudeM: 0 },
+      params: { lungSupply: 0.85, flowSpeed: 1.0, tissueDemand: 0.5, anemia: 0, temperature: 37.0, perfusion: 1.0, altitudeM: 0, fluidRate: 0 },
       entities: {},                            // id → {id, kind:'rbc', edge, s, load, cap, loops}
       compartments: {
         alveolar: { stock: 6.0, capacity: 40 }, // 肺泡側氧庫存（模型單位）
         tissue: { stock: 10.0, capacity: 25 },  // 組織氧庫存（模型單位）
+        volume: { stock: 5.0, capacity: 5.0 },  // 血漿容積（1.0.0；載體小帳，不進氧守恆帳）
       },
+      volumeLedger: { intake: 0, sweat: 0, lastCheckTick: -30, lastResidual: 0 },
       ledger: { initialTotal: 0, input: 0, usage: 0, expelled: 0, lastCheckTick: -1, lastResidual: 0 },
       /* CO₂ 指數（0–1；0.4.0）：血液 CO₂ 相對量的聚合指標（非分子帳）。
          基準點 0.30＝預設參數下的穩態；生產隨 O₂ 使用量，排出隨肺端通氣。 */
@@ -94,6 +102,7 @@
       digestChain: [],                         // 每 tick 摘要（hex 字串）
       _tissueLow: false, _lastTissueLevel: null, _lastParamEvent: null,
       _co2High: false, _lastCo2: null,
+      _volumeLow: false, _lastVolume: null,
       _fluxLung: 0, _fluxTissue: 0,
     };
     /* 初始實體：沿循環均勻撒佈（模型 RNG 僅用於初始抖動） */
@@ -162,7 +171,7 @@
     const cmd = entry.cmd;
     if (cmd.kind === 'setParam') {
       const key = cmd.key;
-      const limits = { lungSupply: [0, 1], tissueDemand: [0, 1], flowSpeed: [0.2, 3], anemia: [0, 0.9], temperature: [36, 41], perfusion: [0.2, 1.8], altitudeM: [0, 6000] };
+      const limits = { lungSupply: [0, 1], tissueDemand: [0, 1], flowSpeed: [0.2, 3], anemia: [0, 0.9], temperature: [36, 41], perfusion: [0.2, 1.8], altitudeM: [0, 6000], fluidRate: [0, 0.02] };
       if (!(key in limits)) return;
       const v = Math.min(limits[key][1], Math.max(limits[key][0], Number(cmd.value)));
       const before = w.params[key];
@@ -188,8 +197,10 @@
     let s = w.tick + '|' + JSON.stringify(w.params) + '|' +
       f6(w.compartments.alveolar.stock) + '|' + f6(w.compartments.alveolar.capacity) + '|' +
       f6(w.compartments.tissue.stock) + '|' + f6(w.compartments.tissue.capacity) + '|' +
+      f6(w.compartments.volume.stock) + '|' + f6(w.compartments.volume.capacity) + '|' +
       (w._tissueLow ? 1 : 0) + '|' + f6(w._lastTissueLevel == null ? -1 : w._lastTissueLevel) + '|' +
       (w._co2High ? 1 : 0) + '|' + f6(w._lastCo2 == null ? -1 : w._lastCo2) + '|' +
+      (w._volumeLow ? 1 : 0) + '|' + f6(w._lastVolume == null ? -1 : w._lastVolume) + '|' +
       f6(w.co2.blood) + '|' + f6(w.co2.produced) + '|' + f6(w.co2.expelled) + '|' + f6(w.co2.retained) + '|' +
       (w._lastParamEvent ? w._lastParamEvent.eventId : 0) + '|' +
       w.eventSeq + '|' +
@@ -227,6 +238,9 @@
       alv.stock = alv.capacity;
       w.ledger.expelled += expelled;
     }
+    /* 2.5) 容積比（1.0.0）：等容 5.0/5.0＝1，行為中立（volume-neutral-at-default 契約）。 */
+    const volFrac = w.compartments.volume.stock / w.compartments.volume.capacity;
+
     /* 3) 實體推進 + 跨界交換
        離散時間邊界契約：移交發生在 tick 內；移交後「同一 tick」的交換
        以**抵達後的邊**為準（稽核契約 HANDOFF_EXCHANGE_BOUNDARY）。 */
@@ -235,7 +249,7 @@
     for (const k in w.entities) {
       const e = w.entities[k];
       const startEdge = CSL.EDGES[e.edge];
-      e.s += (1 / startEdge.baseTicks) * flow;   // 每 tick 進度 = 1/基準跨越時距 × 流速參數
+      e.s += (1 / startEdge.baseTicks) * flow * volFrac;   // 每 tick 進度 = 1/基準跨越時距 × 流速參數 × 容積比（1.0.0）
       if (e.s >= 1) {
         const fromEdge = e.edge;
         e.edge = (e.edge + 1) % CSL.EDGES.length;
@@ -276,7 +290,7 @@
           ? Math.max(0, 1 - w.params.perfusion)
           : w.params.perfusion;
         let flux = Math.min(
-          CSL.K_TISSUE * Math.max(0, e.load - level) * demand * bohr * pMul,
+          CSL.K_TISSUE * Math.max(0, e.load - level) * demand * bohr * pMul * volFrac,
           e.load, Math.max(0, tis.capacity - tis.stock)
         );
         e.load -= flux; tis.stock += flux;
@@ -327,6 +341,16 @@
       if (w.co2.blood < 0) w.co2.blood = 0;
     }
 
+    /* 5.6) 血漿容積（1.0.0）：補水流入、溫度衍生出汗流出——載體小帳，不進氧守恆帳。 */
+    {
+      const vol = w.compartments.volume;
+      const sweatOut = Math.min(0.0002 * Math.max(0, w.params.temperature - 37), vol.stock);
+      const inVol = Math.min(w.params.fluidRate, Math.max(0, vol.capacity - vol.stock));
+      vol.stock += inVol - sweatOut;
+      w.volumeLedger.intake += inVol;
+      w.volumeLedger.sweat += sweatOut;
+    }
+
     /* 6) 閾值事件（下游差異可追溯至引起參數變更的 command） */
     const low = tLevel < 0.25;
     if (low && !w._tissueLow) {
@@ -353,6 +377,27 @@
     }
     w._co2High = co2High;
     w._lastCo2 = w.co2.blood;
+
+    /* 容積低水位（遲滯：<0.70 觸發、≥0.80 解除）——模型指數警示，非臨床判讀 */
+    const vLevel = w.compartments.volume.stock / w.compartments.volume.capacity;
+    const vLow = w._volumeLow ? (vLevel < 0.80) : (vLevel < 0.70);
+    if (vLow && !w._volumeLow) {
+      CSL.emitEvent(w, {
+        kind: 'threshold', regionId: 'TISSUE_CAP', ruleId: 'volumeLow',
+        before: { level: w._lastVolume == null ? null : f6(w._lastVolume) },
+        after: { level: f6(vLevel) },
+        note: 'volume-low',
+      });
+    }
+    w._volumeLow = vLow;
+    w._lastVolume = vLevel;
+
+    /* 容積小帳檢查（每 30 tick）：intake − sweat ＝ 容積變化量（初始滿容 5.0） */
+    if (w.tick - w.volumeLedger.lastCheckTick >= 30) {
+      const vres = w.volumeLedger.intake - w.volumeLedger.sweat - (w.compartments.volume.stock - w.compartments.volume.capacity);
+      w.volumeLedger.lastResidual = vres;
+      w.volumeLedger.lastCheckTick = w.tick;
+    }
 
     /* CO₂ 帳檢查（每 30 tick）：生產 − 排出 − 保留 ＝ 血中指數變化量 */
     if (w.tick - w.co2.lastCheckTick >= 30) {
@@ -384,15 +429,17 @@
       entities: w.entities, compartments: w.compartments,
       ledger: w.ledger, actions: w.actions,
       co2: w.co2,
+      volumeLedger: w.volumeLedger,
       events: w.events, eventSeq: w.eventSeq,
       pendingCommands: w.pendingCommands, idSeq: w.idSeq,
       tissueLow: !!w._tissueLow, lastTissueLevel: w._lastTissueLevel == null ? null : w._lastTissueLevel,
       co2High: !!w._co2High, lastCo2: w._lastCo2 == null ? null : w._lastCo2,
+      volumeLow: !!w._volumeLow, lastVolume: w._lastVolume == null ? null : w._lastVolume,
       lastParamEvent: w._lastParamEvent || null,
       digestChainTail: w.digestChain.slice(-64),
     }));
   };
-  const PARAM_LIMITS = { lungSupply: [0, 1], tissueDemand: [0, 1], flowSpeed: [0.2, 3], anemia: [0, 0.9], temperature: [36, 41], perfusion: [0.2, 1.8], altitudeM: [0, 6000] };
+  const PARAM_LIMITS = { lungSupply: [0, 1], tissueDemand: [0, 1], flowSpeed: [0.2, 3], anemia: [0, 0.9], temperature: [36, 41], perfusion: [0.2, 1.8], altitudeM: [0, 6000], fluidRate: [0, 0.02] };
   CSL.PARAM_LIMITS = PARAM_LIMITS;
   const isFinNum = (v) => typeof v === 'number' && isFinite(v);
 
@@ -412,7 +459,7 @@
       if (!isFinNum(v) || v < PARAM_LIMITS[key][0] || v > PARAM_LIMITS[key][1]) return 'bad-param: ' + key;
     }
     /* 庫存：有限、非負、容量為正、存量不超過容量 */
-    for (const key of ['alveolar', 'tissue']) {
+    for (const key of ['alveolar', 'tissue', 'volume']) {
       const c = snap.compartments && snap.compartments[key];
       if (!c || !isFinNum(c.stock) || !isFinNum(c.capacity)) return 'bad-compartment: ' + key;
       if (c.stock < 0 || c.capacity <= 0) return 'bad-compartment-range: ' + key;
@@ -441,6 +488,12 @@
     if (!L) return 'missing-ledger';
     for (const key of ['initialTotal', 'input', 'usage', 'expelled', 'lastCheckTick', 'lastResidual']) {
       if (!isFinNum(L[key]) || (key !== 'lastResidual' && key !== 'lastCheckTick' && L[key] < 0)) return 'bad-ledger: ' + key;
+    }
+    /* 容積小帳：欄位齊、有限、非負 */
+    const VL = snap.volumeLedger;
+    if (!VL) return 'missing-volume-ledger';
+    for (const key of ['intake', 'sweat', 'lastCheckTick', 'lastResidual']) {
+      if (!isFinNum(VL[key]) || (key !== 'lastResidual' && key !== 'lastCheckTick' && VL[key] < 0)) return 'bad-volume-ledger: ' + key;
     }
     /* 動作與待處理 command */
     if (!Array.isArray(snap.actions)) return 'bad-actions';
@@ -494,7 +547,7 @@
           if (typeof ev.regionId !== 'string') return 'bad-event-region';
           if (!handPayload(ev.before) || !handPayload(ev.after)) return 'bad-event-payload';
         } else if (ev.kind === 'threshold') {
-          if (ev.ruleId !== 'tissueStockLow' && ev.ruleId !== 'co2BloodHigh') return 'bad-event-rule';
+          if (ev.ruleId !== 'tissueStockLow' && ev.ruleId !== 'co2BloodHigh' && ev.ruleId !== 'volumeLow') return 'bad-event-rule';
           if (!thrPayload(ev.before, false) || !thrPayload(ev.after, true)) return 'bad-event-payload';
         } else if (ev.kind !== 'system' && ev.kind !== 'tour') {
           return 'bad-event-kind';
@@ -516,6 +569,9 @@
     w.co2 = snap.co2 || { blood: 0.30, produced: 0, expelled: 0, retained: 0, lastCheckTick: -30, lastResidual: 0 };
     w._co2High = !!snap.co2High;
     w._lastCo2 = snap.lastCo2 === undefined ? null : snap.lastCo2;
+    w.volumeLedger = snap.volumeLedger || { intake: 0, sweat: 0, lastCheckTick: -30, lastResidual: 0 };
+    w._volumeLow = !!snap.volumeLow;
+    w._lastVolume = snap.lastVolume === undefined ? null : snap.lastVolume;
     w.pendingCommands = snap.pendingCommands || [];
     w.idSeq = snap.idSeq; w.eventSeq = snap.eventSeq;
     if (snap.events) w.events = snap.events;
@@ -542,6 +598,7 @@
       entities: w.entities,
       compartments: w.compartments,
       co2: w.co2,
+      volumeLedger: w.volumeLedger,
       ledger: w.ledger,
       actions: w.actions,
       events: w.events,
@@ -551,6 +608,8 @@
       lastTissueLevel: w._lastTissueLevel == null ? null : w._lastTissueLevel,
       co2High: !!w._co2High,
       lastCo2: w._lastCo2 == null ? null : w._lastCo2,
+      volumeLow: !!w._volumeLow,
+      lastVolume: w._lastVolume == null ? null : w._lastVolume,
       lastParamEvent: w._lastParamEvent || null,
       digestChainTail: w.digestChain.slice(-256),
     });
