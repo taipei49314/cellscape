@@ -48,6 +48,10 @@
         url: 'https://www.nature.com/articles/s41591-023-02327-2',
         use: 'HLCA 的原始研究與資料方法；人體來源、組織、狀態需依具體子資料集記錄。',
         checkedOn: '2026-09-08' },
+      { id: 'S11', publisher: 'NCBI Bookshelf / StatPearls', title: 'Physiology, Immune Response',
+        url: 'https://www.ncbi.nlm.nih.gov/books/NBK539801/',
+        use: '感染時嗜中性球為最先被招募的第一線細胞之背景；不提供本模型係數（招募節奏與清除量為工程近似）。',
+        checkedOn: '2026-09-13' },
       { id: 'S10', publisher: 'NCBI Bookshelf / StatPearls', title: 'Physiology, Blood Volume',
         url: 'https://www.ncbi.nlm.nih.gov/books/NBK526077/',
         use: '血量與低血容（hypovolemia）生理背景；不提供本模型係數（補水／出汗速率為工程近似）。',
@@ -311,6 +315,8 @@
       'C-model-temp':     { text: '體溫以 Q10 因子（2^((T−37)/10)）乘 O₂ 使用速率；CO₂ 生產隨使用量連動。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/core.js step() q10 項', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.8.0；工程近似，非體溫調節模型。' },
       'C-model-altitude': { text: '海拔以氣壓比值 (1 − 2.25577e-5·h)^5.25588 乘肺端輸入與裝載驅動，並以過度換氣因子 (1 + 0.6·(1−比值)) 乘 CO₂ 排出；為聚合模型指數近似，非個體生理。', contentType: 'model_assumption', sourceIds: ['S9'], implRef: 'js/loop/core.js step() 輸入項／肺端交換／CO₂ 排出', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.10.0；非高山醫學，非旅遊或健康建議。' },
       'C-model-volume': { text: '血漿容積為獨立載體小帳（0–5.0）：流入由 fluidRate 決定、流出為溫度衍生出汗 0.0002×max(0, temperature−37)／tick；容積比 volFrac 乘移動流速與組織端卸載通量，<0.70 觸發 volumeLow（≥0.80 解除）。聚合模型指數，非個體生理。', contentType: 'model_assumption', sourceIds: ['S10'], implRef: 'js/loop/core.js step() 2.5／5.6／容積閾值', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 1.0.0；非脫水醫學、非輸液建議。' },
+      'C-model-infection': { text: '感染嚴重度（0–1）釘在組織微血管（TISSUE_CAP）：嗜中性球自骨髓池進入循環、抵組織微血管即外滲，每次外滲清除 0.125 感染嚴重度，歸零即發感染清除事件。招募節奏（每 90 tick 一顆）為工程近似。', contentType: 'model_assumption', sourceIds: ['S11'], implRef: 'js/loop/core.js step() 2.4／3.4／4.5 與 applyCommand infection', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 1.1.0；非感染症醫學、非用藥建議。' },
+      'C-model-wbc-8': { text: '嗜中性球同時在循環上限 8 顆，為固定抽樣代表；WBC 不攜氧（負載恆 0）、不適用 RBC 世代輪替。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/core.js WBC_MAX／step() 招募與外滲', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 1.1.0；非全身白血球總量。' },
       'C-model-rbc-turnover': { text: 'RBC 滿 RBC_MAX_LOOPS 圈後退役並在肺端同槽替換；殘餘負載記入 expelled，總量固定 48。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/model.js RBC_MAX_LOOPS；js/loop/core.js step() 3.5', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.8.0；世代輪替示意，非 120 天生理壽命校準。' }
     },
 

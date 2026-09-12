@@ -30,10 +30,10 @@
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
     (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
 
-  const DEFAULTS = { lungSupply: 0.85, flowSpeed: 1.0, tissueDemand: 0.5, anemia: 0, temperature: 37.0, perfusion: 1.0, altitudeM: 0, fluidRate: 0 };
+  const DEFAULTS = { lungSupply: 0.85, flowSpeed: 1.0, tissueDemand: 0.5, anemia: 0, temperature: 37.0, perfusion: 1.0, altitudeM: 0, fluidRate: 0, infection: 0 };
   /* 這兩支滑桿與藥物預設才會建立 A/B 基線（js/loop/main.js）；
      提示語必須照實寫，不能說「任一次介入都會建立」。 */
-  const BRANCHING_KEYS = ['lungSupply', 'anemia', 'altitudeM', 'fluidRate'];
+  const BRANCHING_KEYS = ['lungSupply', 'anemia', 'altitudeM', 'fluidRate', 'infection'];
 
   /* 每個關卡是一個純述詞：吃 ctx 快照，回傳 true/false。
      ctx = { world, baseline, main: { branchA, activeIsA, seenA, expandedEventId, seenChain } } */
@@ -79,7 +79,7 @@
       gates: [
         {
           id: 'C1',
-          zh: '建立 A/B 基線分支（動「肺端供氧」、「貧血程度」、「海拔」或「補水速率」滑桿，或按任一個藥物預設）',
+          zh: '建立 A/B 基線分支（動「肺端供氧」、「貧血程度」、「海拔」、「補水速率」或「感染嚴重度」滑桿，或按任一個藥物預設）',
           test: (ctx) => !!(ctx.main && ctx.main.branchA),
         },
         {

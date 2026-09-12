@@ -85,6 +85,8 @@
     <input type="range" data-key="altitudeM" min="0" max="6000" step="250" value="0"></div>
   <div class="prm"><label><span data-i18n="params.fluidRate">補水速率</span> <b id="pv_fluidRate" class="mono">0.000</b></label>
     <input type="range" data-key="fluidRate" min="0" max="0.02" step="0.001" value="0"></div>
+  <div class="prm"><label><span data-i18n="params.infection">感染嚴重度</span> <b id="pv_infection" class="mono">0.00</b></label>
+    <input type="range" data-key="infection" min="0" max="1" step="0.05" value="0"></div>
   <div class="prm stat"><i>肺泡水位</i><b id="statAlv" class="mono">—</b>
     <i>組織水位</i><b id="statTis" class="mono">—</b>
     <i>平均負載</i><b id="statMean" class="mono">—</b></div>
@@ -101,6 +103,7 @@
       <button type="button" class="btn2 tiny drug" data-preset="altitude" data-i18n="drug.altitude">登上高地（4000 m）</button>
       <button type="button" class="btn2 tiny drug" data-preset="heatstroke" data-i18n="drug.heatstroke">中暑（高溫脫水）</button>
       <button type="button" class="btn2 tiny drug" data-preset="infusion" data-i18n="drug.infusion">輸液（補水）</button>
+      <button type="button" class="btn2 tiny drug" data-preset="infection" data-i18n="drug.infection">組織感染</button>
     </div>
   </div>
   <div class="note" data-i18n="params.note">組織色階 = 組織氧庫存水位（模型欄位），非診斷影像。</div>
