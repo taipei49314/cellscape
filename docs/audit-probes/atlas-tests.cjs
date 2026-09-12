@@ -275,6 +275,9 @@ const run = (s) => vm.runInContext(s, c, { timeout: 60000 });
     const early = O.rateSeries({ tick: w.tick }, B);
     const earlyAllMissing = early.points.every((p) => p.missing);
     for (let i = 0; i < 400; i++) { CSL.step(w); O.recordTick(w, B, null); }
+    /* 序列點落在 SAMPLE_EVERY 的倍數上，readout() 則以當前 tick 為右端；
+       先把模型時鐘推到取樣點，兩者的窗口右端才是同一個 tick。 */
+    while (w.tick % O.SAMPLE_EVERY !== 0) { CSL.step(w); O.recordTick(w, B, null); }
     const s = O.rateSeries({ tick: w.tick }, B);
     const last = s.points[s.points.length - 1];
     const rl = O.readout(w, B, null, 'flux_lung_rate');
@@ -291,7 +294,8 @@ const run = (s) => vm.runInContext(s, c, { timeout: 60000 });
     O.rateSeries({ tick: w.tick }, B);
     return {
       earlyAllMissing, earlyAvailable: early.available,
-      matchesReadout: last && !last.missing && near(last.lung, rl.value) && near(last.tissue, rt.value) && near(last.usage, ru.value),
+      lastAlignedToNow: !!last && last.t === w.tick,
+      matchesReadout: last && !last.missing && last.t === w.tick && near(last.lung, rl.value) && near(last.tissue, rt.value) && near(last.usage, ru.value),
       windowTicks: s.window.ticks, observed: s.observedPoints, total: s.totalPoints,
       noInterpolation: s.points.every((p) => p.missing || (isFinite(p.lung) && isFinite(p.tissue) && isFinite(p.usage))),
       someMissingAfterGap,
@@ -300,7 +304,7 @@ const run = (s) => vm.runInContext(s, c, { timeout: 60000 });
     };
   })()`);
   check('rate-series-window-semantics',
-    r.earlyAllMissing && !r.earlyAvailable && r.matchesReadout && r.windowTicks === 90
+    r.earlyAllMissing && !r.earlyAvailable && r.lastAlignedToNow && r.matchesReadout && r.windowTicks === 90
       && r.observed > 0 && r.noInterpolation && r.someMissingAfterGap && r.readOnly && r.missingHaveNoValues,
     JSON.stringify(r));
 }
