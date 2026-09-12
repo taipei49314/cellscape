@@ -1,17 +1,18 @@
 {
   "kind": "cellscape-frozen-core-baseline",
-  "note": "T-325 基線；T-329 F1 解凍 tour.js；F2 解凍 core/model/content/render（EDGES 雙床＋站點座標＋MODEL 0.7.0）。engine/data 仍為 T-325 釘定。unchanged-core.json 不改寫。",
+  "note": "T-325 基線；T-329 F1 tour、F2 雙床、F3 RBC 輪替解凍後更新。engine/data 仍為 T-325 釘定。unchanged-core.json 不改寫。",
   "pinned_at_main": "31506887cef3c913cb434b8733d8d522a4df0f36",
-  "pinned_at_utc": "2026-09-12T04:40:00Z",
+  "pinned_at_utc": "2026-09-12T05:10:00Z",
   "files": {
-    "js/loop/core.js": "880a2611903bafb90885157d3e38debc9c843d69b67291895223c7dde26468d6",
-    "js/loop/model.js": "0971578a298f6f212bf8a7ad96695e8fb685ca7d60e2fb939ea41cc6c3478570",
+    "js/loop/core.js": "8c5ed33adf84011e0094190bebcb632ab7195fe041b659b7b6ac880b2a434eae",
+    "js/loop/model.js": "d779fba758eb658eb7ddd60ef950e4dafbc3ed5282f35459ede8b85b15cb68b5",
     "js/loop/render.js": "a2f82ba92a3c6489d163bbd1b539dc2594969ae7ae3eed3f1398fba318576fdf",
     "js/loop/tour.js": "06e0ccca55d894c2036e978776b977f42fa35f148b416eaab667be327aa3f7ef",
-    "js/loop/content.js": "18016a3be19f916425473bec721e193d11b188dcab5abbe7991d22cd452376e4",
+    "js/loop/content.js": "9b60c55648d8a3c7c014efc981c82bf55b7f72f27ffc568e1ba1ef73270cec7a",
     "js/engine.js": "6168ed165da03d1d714ece1bbcf7bd33c8d5166a8b7e3874c79cd3d9b68d3ee0",
     "js/data.js": "8759c4cab657574a672b1423b1785e600a0af3dad244d0def36056c3997eae39"
   },
   "f1_tour_unfreeze": "T-329 named: chapter A skip/prev/step-replay navigation only",
-  "f2_dual_bed": "T-329 named unfreeze includes render.js STATION_POS for TISSUE_CAP_2; MODEL_VERSION 0.7.0"
+  "f2_dual_bed": "T-329 named unfreeze includes render.js STATION_POS for TISSUE_CAP_2; MODEL_VERSION 0.7.0",
+  "f3_rbc_turnover": "T-329 named 開F3; MODEL_VERSION 0.8.0"
 }

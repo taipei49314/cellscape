@@ -300,7 +300,8 @@
       'C-model-co2':      { text: 'CO₂ 以 0–1 指數近似：組織隨使用量生產、肺端隨通氣排出；Bohr 效應以卸載倍率（0.75–1.35）近似。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/core.js co2 與 step() Bohr 項', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.6.0；模型指數，非臨床酸鹼值。' },
       'C-model-perfusion':{ text: 'perfusion 在拓樸雙組織床（0.7.0）上再分配卸載通量：≤1 時主床×perfusion、次床×max(0,1−perfusion)，名目合計≈1；>1 全給主床。1.0＝0.6.0 單床行為。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/model.js EDGES perfusionSite；js/loop/core.js step() 組織端 flux', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.7.0；不是 mmHg 血壓、不是心輸出量；僅兩個建模組織床。' },
       'C-model-anemia':   { text: 'anemia 參數只閘肺端裝載上限（(1 − anemia) × 容量），不回溯調整已攜帶的氧，守恆帳結構不變。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/core.js step() 肺端 eCap', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.6.0；非血紅素濃度或血比容。' },
-      'C-model-temp':     { text: '體溫以 Q10 因子（2^((T−37)/10)）乘 O₂ 使用速率；CO₂ 生產隨使用量連動。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/core.js step() q10 項', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.6.0；工程近似，非體溫調節模型。' }
+      'C-model-temp':     { text: '體溫以 Q10 因子（2^((T−37)/10)）乘 O₂ 使用速率；CO₂ 生產隨使用量連動。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/core.js step() q10 項', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.8.0；工程近似，非體溫調節模型。' },
+      'C-model-rbc-turnover': { text: 'RBC 滿 RBC_MAX_LOOPS 圈後退役並在肺端同槽替換；殘餘負載記入 expelled，總量固定 48。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/model.js RBC_MAX_LOOPS；js/loop/core.js step() 3.5', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.8.0；世代輪替示意，非 120 天生理壽命校準。' }
     },
 
     /* 分類對應（示例）：exact/broader/related/unmapped，不捏造標準 ontology ID */
