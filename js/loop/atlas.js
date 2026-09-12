@@ -373,13 +373,13 @@
       const card = CSL.Content.cards.find((c) => c.id === this.activeCard);
       const claimIds = new Set();
       card.qa.forEach((qa) => qa.claimIds.forEach((cid) => claimIds.add(cid)));
-      if (this.activeCard === 'rbc') ['C-model-load', 'C-model-aggregate', 'C-model-lungsupply', 'C-model-flowspeed', 'C-model-tissuedemand', 'C-model-co2', 'C-model-temp', 'C-model-anemia'].forEach((c) => claimIds.add(c));
+      if (this.activeCard === 'rbc') ['C-model-load', 'C-model-aggregate', 'C-model-lungsupply', 'C-model-flowspeed', 'C-model-tissuedemand', 'C-model-co2', 'C-model-temp', 'C-model-anemia', 'C-model-perfusion'].forEach((c) => claimIds.add(c));
       const K = { KL: CSL.K_LUNG, KT: CSL.K_TISSUE, KU: CSL.K_USE, DT: 1 / 30 };
       const rulesBlock = `
         <div class="note"><b>本版（MODEL_VERSION ${esc(CSL.MODEL_VERSION)}）的三種規則——文字與實作綁定：</b>
         <ul class="kps">
           <li>肺端裝載：flux = K_LUNG × max(0, 肺泡水位 − 負載) × lungSupply，受庫存與可用容量限制。K_LUNG = ${K.KL}（模型單位）。</li>
-          <li>組織卸載：flux = K_TISSUE × max(0, 負載 − 組織水位) × (0.5 + tissueDemand)，受負載與組織容量限制。K_TISSUE = ${K.KT}。</li>
+          <li>組織卸載：flux = K_TISSUE × max(0, 負載 − 組織水位) × (0.5 + tissueDemand) × Bohr × perfusion，受負載與組織容量限制。K_TISSUE = ${K.KT}；perfusion＝流向這個組織床的血流比例（模型 0.6.0），1.0 為基準。</li>
           <li>組織使用：usage = K_USE × (0.5 + tissueDemand) × 組織水位 × Q10，受現有庫存限制；庫存為零即無消耗。K_USE = ${K.KU}；Q10 = 2^((temperature − 37) / 10)（模型 0.5.0）。</li>
           <li>貧血上限：肺端裝載的可用容量為 (1 − anemia) × cap——只閘裝載上限，不改守恆帳結構（模型 0.3.0）。</li>
           <li>CO₂ 與 Bohr：組織隨使用量生產 CO₂ 指數、肺端隨通氣排出；卸載側乘 Bohr 倍率（0.75–1.35 鉗位，穩態為 1）。血中 CO₂ ≥0.70 觸發模型指數警示，非臨床酸鹼判讀（模型 0.4.0）。</li>
