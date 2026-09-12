@@ -1,6 +1,6 @@
 {
   "kind": "cellscape-frozen-core-baseline",
-  "note": "T-325 基線；T-329 F1 tour、F2 雙床、F3 RBC 輪替解凍後更新。T-343 digest 契約修補（MODEL 0.9.0）更新 core.js。engine/data 仍為 T-325 釘定。unchanged-core.json 不改寫。",
+  "note": "T-325 基線；T-329 F1 tour、F2 雙床、F3 RBC 輪替解凍後更新。T-343 digest 契約修補（MODEL 0.9.0）更新 core.js。T-344 content.js 一字修補（區段）。engine/data 仍為 T-325 釘定。unchanged-core.json 不改寫。",
   "pinned_at_main": "31506887cef3c913cb434b8733d8d522a4df0f36",
   "pinned_at_utc": "2026-09-12T05:10:00Z",
   "files": {
@@ -8,7 +8,7 @@
     "js/loop/model.js": "d779fba758eb658eb7ddd60ef950e4dafbc3ed5282f35459ede8b85b15cb68b5",
     "js/loop/render.js": "a2f82ba92a3c6489d163bbd1b539dc2594969ae7ae3eed3f1398fba318576fdf",
     "js/loop/tour.js": "06e0ccca55d894c2036e978776b977f42fa35f148b416eaab667be327aa3f7ef",
-    "js/loop/content.js": "9b60c55648d8a3c7c014efc981c82bf55b7f72f27ffc568e1ba1ef73270cec7a",
+    "js/loop/content.js": "808ff86f09986de87932694d2782d3e9da78a2c37498c40c2df75478241d9015",
     "js/engine.js": "6168ed165da03d1d714ece1bbcf7bd33c8d5166a8b7e3874c79cd3d9b68d3ee0",
     "js/data.js": "8759c4cab657574a672b1423b1785e600a0af3dad244d0def36056c3997eae39"
   },

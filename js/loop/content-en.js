@@ -85,6 +85,7 @@
       rateUsage: 'Tissue usage',
       modelSecUnit: 'model seconds',
       nowLabel: 'now',
+      chartIntervention: 'intervention',
       rateDisabled: 'Observation module disabled (stated, not hidden)',
       rateMissing: 'Missing data: the rate window has not filled yet',
       rateNoteMissing: 'No rate curve yet - an unfilled window is missing data, not zero, and is never drawn as a flat or dashed line.',
