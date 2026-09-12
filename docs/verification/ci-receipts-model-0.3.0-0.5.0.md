@@ -1,4 +1,6 @@
-# CI 收據：模型 0.3.0 – 0.5.0（estate runner pool）
+# CI 收據：模型 0.3.0 – 0.6.0（estate runner pool）
+
+> 檔名保留原 0.3.0–0.5.0（避免改名斷連結）；0.5.1 與 0.6.0 的段落在文末。
 
 本檔補記 v0.3.2 封存輪之後三個模型維度的 CI 結果。**這是 CI 收據，不是產品驗收**：
 `npm test` 只跑隨包零依賴的 19 項 scoped check；`browser acceptance` 是 pool 上的無頭
@@ -64,3 +66,18 @@ artifact 上傳其後移除，效能數字改以 step log 為收據。
 4. **兩套版本號**：瀏覽器驗收抓到的頁面標題仍是 `CELLSCAPE · Living Atlas v0.3.2`（產品版），
    與 `MODEL_VERSION`（模型版）是不同的東西，不可混用。
 5. 實機效能、熱行為、長時間耐力、跨瀏覽器、五人可用性與生物學有效性，全部未做。
+
+## 模型 0.5.1（CO₂ 匯入修復與遲滯）— PR #15，squash `8c34630b`（T-316 刀 D2）
+
+先在未修正的 main 上以負向對照證明測試抓得到缺陷（分支 `test/co2-negative-control-t316`，run
+`34658515799`、`34658809829` 皆 2 FAILURES：`SNAPSHOT_REJECTED: bad-event-rule`、`packHasFlags:false`、
+遲滯 `bandTicks:189` 但 `midHold:false`）。修正後 PR head run `34658603317` 起，
+`co2-event-export-import-continues` 轉 PASS；合併後 main `34659043853` npm test、`34659043855`
+browser acceptance 皆 success。
+
+## 模型 0.6.0（perfusion 血流再分配）— T-317 D4
+
+PR-head 與合併後 main 的 run ID 見 estate-consolidation 的 T-317 證據（本檔在該刀開 PR 時寫入，
+合併後的 main run 不回填本檔，以免與「不改寫歷史收據」的做法混淆）。本刀新增兩項行為契約：
+`perfusion-neutral-at-1`（1.0 與未設定世界逐拍摘要相同）與 `perfusion-scales-tissue-delivery`
+（低／基準／高灌流的組織庫存單調、低灌流時平均負載上升、守恆殘差 ≤1e-6）。

@@ -126,11 +126,12 @@ const SETUP = `
   const c = freshEnv();
   const r = run(c, `(()=>{${SETUP}
     const w = CSL.createWorld({ seed: 616 });
-    applyParams(w, { anemia: 1.5, temperature: 55, lungSupply: -1, flowSpeed: 99 });
+    applyParams(w, { anemia: 1.5, temperature: 55, lungSupply: -1, flowSpeed: 99, perfusion: 9 });
     const L = CSL.PARAM_LIMITS;
     return { params: w.params, limits: L,
              clamped: w.params.anemia === L.anemia[1] && w.params.temperature === L.temperature[1]
-               && w.params.lungSupply === L.lungSupply[0] && w.params.flowSpeed === L.flowSpeed[1],
+               && w.params.lungSupply === L.lungSupply[0] && w.params.flowSpeed === L.flowSpeed[1]
+               && w.params.perfusion === L.perfusion[1],
              inRange: Object.entries(L).every(([k, [lo, hi]]) => w.params[k] >= lo && w.params[k] <= hi) };
   })()`);
   check('param-limits-clamp-to-exported-limits', r.clamped && r.inRange, JSON.stringify(r));
@@ -230,7 +231,48 @@ const SETUP = `
     JSON.stringify(r));
 }
 
-console.log('=== model behaviour contracts (0.3.0 / 0.4.0 / 0.5.0 / 0.5.1) ===');
+/* 10. perfusion = 1.0 是中性值：與從未設定 perfusion 的世界逐拍摘要完全相同
+       （證明 0.6.0 在基準值下與 0.5.1 行為一致）。 */
+{
+  const c = freshEnv();
+  const r = run(c, `(()=>{${SETUP}
+    const a = CSL.createWorld({ seed: 3131 });
+    applyParams(a, { perfusion: 1.0 });
+    const b = CSL.createWorld({ seed: 3131 });
+    runTicks(b, 5);
+    for (let i = 0; i < 400; i++) { CSL.step(a); CSL.digestStep(a); CSL.step(b); CSL.digestStep(b); }
+    const same = a.digestChain.length === b.digestChain.length
+      && a.digestChain.every((v, i) => v === b.digestChain[i]);
+    return { same, n: a.digestChain.length, defaultPerfusion: CSL.createWorld({ seed: 1 }).params.perfusion };
+  })()`);
+  check('perfusion-neutral-at-1', r.same && r.defaultPerfusion === 1.0, JSON.stringify(r));
+}
+
+/* 11. 血流再分配：低灌流使組織端累積遞送下降、高灌流上升，且守恆殘差不變。
+       低灌流時血中應留住更多氧（平均負載較高），這是「送不進去」而不是「憑空消失」。 */
+{
+  const c = freshEnv();
+  const r = run(c, `(()=>{${SETUP}
+    const at = (perfusion) => {
+      const w = CSL.createWorld({ seed: 24680 });
+      applyParams(w, { perfusion });
+      let delivered = 0;
+      for (let i = 0; i < 600; i++) { const before = w.ledger.usage; CSL.step(w); delivered += w.ledger.usage - before; }
+      const meanLoad = Object.values(w.entities).reduce((s2, e) => s2 + e.load / e.cap, 0) / Object.keys(w.entities).length;
+      return { usage: w.ledger.usage, tissue: w.compartments.tissue.stock, meanLoad,
+               residual: Math.abs(CSL.ledgerResidual(w)) };
+    };
+    const low = at(0.3), base = at(1.0), high = at(1.6);
+    return { low, base, high,
+             monotonic: low.tissue < base.tissue && base.tissue < high.tissue,
+             loadBacksUp: low.meanLoad > base.meanLoad,
+             residual: Math.max(low.residual, base.residual, high.residual) };
+  })()`);
+  check('perfusion-scales-tissue-delivery',
+    r.monotonic && r.loadBacksUp && r.residual <= 1e-6, JSON.stringify(r));
+}
+
+console.log('=== model behaviour contracts (0.3.0 / 0.4.0 / 0.5.0 / 0.5.1 / 0.6.0) ===');
 let fails = 0;
 for (const r of results) {
   console.log((r.pass ? 'PASS' : 'FAIL') + '  ' + r.name + '   ' + r.detail);

@@ -15,7 +15,9 @@
      （MODEL_RULE_IDENTITY 契約）。
      0.2.2：digest 納入 eventSeq（DIGEST_SCOPE 修復）＋事件 kind 相依 payload
      深驗證。舊包之 digestChainTail 以舊正規化計算，無法跨版延續，故顯式拒絕。 */
-  CSL.MODEL_VERSION = '0.5.1';   /* 0.5.1：檢查點身分契約修復（T-316 刀 D2）——匯入驗證接受 co2BloodHigh 閾值事件、
+  CSL.MODEL_VERSION = '0.6.0';   /* 0.6.0：新增 perfusion 參數（T-317 D4 血流再分配；只乘組織端卸載通量，1.0＝0.5.1 行為，
+                                    守恆帳結構與 digest 正規化不變；參數界限新增一鍵，舊包依版本閘拒絕）。
+                                    0.5.1：檢查點身分契約修復（T-316 刀 D2）——匯入驗證接受 co2BloodHigh 閾值事件、
                                     exportRun 帶出 co2High/lastCo2、CO₂ 閾值補上文件所述遲滯；交換方程式與守恆帳結構不變。
                                     0.5.0：新增 temperature 參數（T-303 體溫刀；O₂ 使用量乘 Q10 因子，守恆帳結構不變） */
   CSL.SCHEMA_VERSION = 1;
@@ -62,7 +64,7 @@
       branchOf: opts.branchOf || null,
       tick: 0,
       rng: new Rng(seed).getState(),          // 模型 RNG 狀態（唯一；視覺 RNG 在渲染層）
-      params: { lungSupply: 0.85, flowSpeed: 1.0, tissueDemand: 0.5, anemia: 0, temperature: 37.0 },
+      params: { lungSupply: 0.85, flowSpeed: 1.0, tissueDemand: 0.5, anemia: 0, temperature: 37.0, perfusion: 1.0 },
       entities: {},                            // id → {id, kind:'rbc', edge, s, load, cap, loops}
       compartments: {
         alveolar: { stock: 6.0, capacity: 40 }, // 肺泡側氧庫存（模型單位）
@@ -147,7 +149,7 @@
     const cmd = entry.cmd;
     if (cmd.kind === 'setParam') {
       const key = cmd.key;
-      const limits = { lungSupply: [0, 1], tissueDemand: [0, 1], flowSpeed: [0.2, 3], anemia: [0, 0.9], temperature: [36, 41] };
+      const limits = { lungSupply: [0, 1], tissueDemand: [0, 1], flowSpeed: [0.2, 3], anemia: [0, 0.9], temperature: [36, 41], perfusion: [0.2, 1.8] };
       if (!(key in limits)) return;
       const v = Math.min(limits[key][1], Math.max(limits[key][0], Number(cmd.value)));
       const before = w.params[key];
@@ -250,8 +252,11 @@
         /* Bohr 效應近似（0.4.0）：血中 CO₂ 高 ⇒ 卸載更容易（曲線右移）；
            倍率鉗位 [0.75, 1.35]，0.30 穩態時＝1（與 0.3.0 行為一致）。 */
         const bohr = Math.min(1.35, Math.max(0.75, 1 + 0.8 * (w.co2.blood - 0.30)));
+        /* 血流再分配（0.6.0）：perfusion＝流向這個組織床的血流比例，只乘組織端卸載通量；
+           1.0＝0.5.1 行為。這不是 mmHg 血壓、不是心輸出量；本模型只有一個組織床，
+           「再分配」只表現為這個床拿到的比例，其餘血管床未建模。 */
         let flux = Math.min(
-          CSL.K_TISSUE * Math.max(0, e.load - level) * demand * bohr,
+          CSL.K_TISSUE * Math.max(0, e.load - level) * demand * bohr * w.params.perfusion,
           e.load, Math.max(0, tis.capacity - tis.stock)
         );
         e.load -= flux; tis.stock += flux;
@@ -347,7 +352,7 @@
       digestChainTail: w.digestChain.slice(-64),
     }));
   };
-  const PARAM_LIMITS = { lungSupply: [0, 1], tissueDemand: [0, 1], flowSpeed: [0.2, 3], anemia: [0, 0.9], temperature: [36, 41] };
+  const PARAM_LIMITS = { lungSupply: [0, 1], tissueDemand: [0, 1], flowSpeed: [0.2, 3], anemia: [0, 0.9], temperature: [36, 41], perfusion: [0.2, 1.8] };
   CSL.PARAM_LIMITS = PARAM_LIMITS;
   const isFinNum = (v) => typeof v === 'number' && isFinite(v);
 

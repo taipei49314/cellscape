@@ -1,6 +1,6 @@
 /* ============================================================
    CELLSCAPE Living Atlas — content-en.js（T-299 刀 C3）
-   content.js（v0.3.0-content.4）的英文覆蓋層：純資料、無可執行邏輯。
+   content.js（v0.3.0-content.5）的英文覆蓋層：純資料、無可執行邏輯。
    邊界：
    - 本檔是「平行翻譯層」，不改寫 content.js 的正本與證據分級；
      層級與聲明沿用各角色卡／主張登錄（reviewStatus 不因翻譯改變）。
@@ -14,12 +14,13 @@
 
   CSL.ContentEN = {
     enVersion: 'content-en.1',
-    mirrors: 'v0.3.0-content.4',
+    mirrors: 'v0.3.0-content.5',
 
     /* 殼層字串（loop.html data-i18n 與 atlas 標題） */
     shell: {
       'tab.know': 'Know it', 'tab.now': 'Right now', 'tab.mech': 'How it works', 'tab.src': 'Sources',
       'nav.follow': '◎ Follow a red blood cell',
+      'params.perfusion': 'Tissue perfusion',
       'view.explore': 'Free exploration', 'view.overview': 'Circulation overview',
       'view.lung': 'Lung micro-view', 'view.tissue': 'Tissue exchange',
       'panel.events': 'Event log', 'panel.inspector': 'Inspector',
@@ -129,6 +130,7 @@
       'C-legacy-indep':   'The eight legacy scenes (index.html) share no model state with this linked world.',
       'C-model-co2':      'CO₂ is approximated as a 0–1 index: produced in the tissues in step with usage, expelled at the lung in step with ventilation; the Bohr effect is approximated as an unloading multiplier (0.75–1.35).',
       'C-model-temp':     'Body temperature multiplies the O₂ usage rate by a Q10 factor (2^((T−37)/10)); CO₂ production follows usage.',
+      'C-model-perfusion':'The perfusion parameter represents the share of blood flow reaching this tissue bed and only multiplies the tissue-side unloading flux; this model has a single tissue bed and does not model any other vascular bed.',
       'C-model-anemia':   'The anemia parameter only gates the lung-side loading ceiling ((1 − anemia) × capacity); it does not retroactively change oxygen already carried, and the conservation ledger is unchanged.'
     },
 
