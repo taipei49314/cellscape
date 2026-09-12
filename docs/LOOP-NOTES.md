@@ -2,10 +2,11 @@
 
 ## 執行
 
-- 本地靜態開啟 `loop.html`（建議經 HTTP：`python -m http.server 8642`）。
-- 入口：`index.html` 頂列「v0.2 Living Loop ↗」。
-- `index.html` 的八個場景為**既有獨立場景**（r4 基線，未與新世界連動）；
+- 根目錄 `/` 與 `index.html` 進入 Living Atlas（轉到 `loop.html`）。Windows 可用 `start.bat`。
+- 本地靜態開啟：`python -m http.server 8642 --bind 127.0.0.1`，然後開 `http://127.0.0.1:8642/loop.html`。
+- `museum.html` 的八個場景為**既有獨立場景**（r4 基線，未與新世界連動；歷史文件曾稱 `index.html`）；
   `loop.html` 為**連動世界**。兩者只有入口關係，無共享模擬狀態。
+- 五人小樣本腳本：[TRY.md](TRY.md)。尚未由人類跑完，不宣稱學習成效。
 
 ## 模型單位（未校準）
 
