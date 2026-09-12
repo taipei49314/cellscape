@@ -252,13 +252,17 @@
       } else if (edge) exchangeLine = NW('nonExchange', { label: edge.label }) || `位於${edge.label}（非交換界面段）——此段無交換可證明。`;
 
       const change = CSL.Observe.recentChange(branchId, entityId);
-      const changeLineRaw = (change.state === 'missing'
+      /* 方向詞由 change.state 映射——observe 只回資料狀態；EN 詞在此定義，
+         EN 模板 {text} 直接收到正確語言的詞，不再以字串 replace 補丁翻譯 */
+      const isEn = CSL.I18n && CSL.I18n.isEn && CSL.I18n.isEn();
+      const dirText = change.state === 'missing' ? ''
+        : (isEn ? ({ up: 'rising', down: 'falling', flat: 'nearly unchanged' }[change.state] || change.text)
+                : (change.text || ''));
+      const deltaTxt = change.delta != null ? '（' + (change.delta > 0 ? '+' : '') + change.delta.toFixed(3) + '）' : '';
+      const changeLine = (change.state === 'missing'
         ? (NW('changeMissing') || '負載最近變化：資料不足（本實體樣本尚少）。')
-        : (NW('changeMeasured', { sec: change.seconds.toFixed(1), text: change.text, delta: change.delta != null ? '（' + (change.delta > 0 ? '+' : '') + change.delta.toFixed(3) + '）' : '' })
-          || `負載最近變化（觀測 ${change.seconds.toFixed(1)} 模型秒）：${change.text}${change.delta != null ? '（' + (change.delta > 0 ? '+' : '') + change.delta.toFixed(3) + '）' : ''}。`))
-      const changeLine = CSL.I18n && CSL.I18n.isEn && CSL.I18n.isEn()
-        ? changeLineRaw.replace('上升', 'rising').replace('下降', 'falling')   // EN：change.text 方向詞來自 observe 資料值
-        : changeLineRaw;
+        : (NW('changeMeasured', { sec: change.seconds.toFixed(1), text: dirText, delta: deltaTxt })
+          || `負載最近變化（觀測 ${change.seconds.toFixed(1)} 模型秒）：${dirText}${deltaTxt}。`))
       const cov = CSL.Observe.coverageSeconds(branchId, entityId);
       const covLine = cov == null
         ? (NW('covMissing') || '觀察覆蓋：選取剛改變或剛匯入——本實體尚無歷史樣本（明示缺資料，不捏造曲線）。')
@@ -414,6 +418,7 @@
     drawChart(view, branchId, entityId) {
       const cv = $('loadChart');
       if (!cv) return;
+      const NW = (k, vars) => (CSL.I18n ? CSL.I18n.now(k, vars) : null);
       const dpr = global.devicePixelRatio || 1;
       const wCss = cv.parentElement.clientWidth || 240, hCss = 96;
       if (cv.width !== wCss * dpr) { cv.width = wCss * dpr; cv.height = hCss * dpr; cv.style.width = wCss + 'px'; cv.style.height = hCss + 'px'; }
@@ -440,8 +445,8 @@
       g.strokeRect(30.5, 4.5, wCss - 38, hCss - 18);
       g.font = '9px sans-serif'; g.fillStyle = 'rgba(160,180,200,.8)';
       g.fillText('100%', 2, 10); g.fillText('0%', 2, hCss - 14);
-      g.fillText('−' + (span / 30).toFixed(0) + ' 模型秒', 32, hCss - 2);
-      g.fillText('現在', wCss - 26, hCss - 2);
+      g.fillText('−' + (span / 30).toFixed(0) + ' ' + (NW('modelSecUnit') || '模型秒'), 32, hCss - 2);
+      g.fillText(NW('nowLabel') || '現在', wCss - 26, hCss - 2);
       /* 介入標記（actions：u=使用者 t=導覽） */
       for (const a of view.actions || []) {
         if (a.tick < t0 || a.tick > tEnd) continue;
@@ -449,7 +454,7 @@
         g.strokeStyle = 'rgba(255,210,120,.6)';
         g.beginPath(); g.moveTo(ax, 5); g.lineTo(ax, hCss - 14); g.stroke();
         g.fillStyle = 'rgba(255,210,120,.9)';
-        g.fillText(a.source === 'user' ? '介入' : 'tour', ax + 1, 12);
+        g.fillText(a.source === 'user' ? (NW('chartIntervention') || '介入') : 'tour', ax + 1, 12);
       }
       /* 曲線：相鄰樣本 Δt == 6 tick 才連線；缺口斷開（不插補） */
       g.strokeStyle = '#6fd3ff'; g.lineWidth = 1.6; g.beginPath();

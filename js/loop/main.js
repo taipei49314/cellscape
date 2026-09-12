@@ -21,9 +21,12 @@
     reduced: false,
 
     init() {
-      /* URL：?seed=（僅種子與小型參數，不放快照） */
+      /* URL：?seed=（僅種子與小型參數，不放快照）。
+         ?seed=0 即種子 0——只有未提供或非數值才用預設種子（URL 可重現性）。 */
       const url = new URL(location.href);
-      const seed = parseInt(url.searchParams.get('seed') || '0', 10) || 0x51EED;
+      const rawSeed = url.searchParams.get('seed');
+      const parsedSeed = rawSeed == null || rawSeed.trim() === '' ? NaN : Number(rawSeed);
+      const seed = Number.isFinite(parsedSeed) ? (parsedSeed >>> 0) : 0x51EED;
 
       this.world = CSL.createWorld({ seed });
       CSL.Observe.init();                      // 觀察工作階段（v0.3 Atlas；非模型一部分）
@@ -78,7 +81,9 @@
         } catch (err) {
           global.__loopErrors.push(String((err && err.stack) || err));
           if (global.__loopErrors.length > 8) global.__loopErrors.shift();
+          this._errShow();                        // 靜默吞錯修補（審查 #3）：UI 明示錯誤徽章
         }
+        this._errCool();                          // 連續約 1 秒無錯誤即收起徽章
         requestAnimationFrame(loop);
       };
       requestAnimationFrame(loop);
@@ -420,6 +425,22 @@
       const el = $('langToggle');
       if (el && CSL.I18n) el.textContent = CSL.I18n.get() === 'en' ? '中文' : 'EN';
     },
+    /* ---------- 執行錯誤徽章（__loopErrors 的 UI 面；詳情在 title 與主控台） ---------- */
+    _errShow() {
+      const el = $('errNote');
+      if (!el) return;
+      const n = global.__loopErrors.length;
+      el.textContent = (CSL.I18n && CSL.I18n.isEn && CSL.I18n.isEn() ? '⚠ runtime error ×' : '⚠ 執行錯誤 ×') + n;
+      el.title = global.__loopErrors[n - 1] || '';
+      el.style.display = 'block';
+      this._errFrames = 0;
+    },
+    _errCool() {
+      const el = $('errNote');
+      if (!el || el.style.display !== 'block') return;
+      if (++this._errFrames > 60) { el.style.display = 'none'; this._errFrames = 0; }
+    },
+
     _perf(wallMs) {
       this._frames.push(wallMs * 1000);
       if (this._frames.length > 240) this._frames.shift();
