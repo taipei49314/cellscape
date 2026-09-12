@@ -263,6 +263,53 @@ const run = (s) => vm.runInContext(s, c, { timeout: 60000 });
     JSON.stringify({ used: used.length, en: r.keys.length, missing, unused }));
 }
 
+/* 12. rateSeries（T-319）：與 readout 同值、缺窗為 missing、不插補、唯讀 */
+{
+  const r = run(`(()=>{
+    const O = CSL.Observe;
+    O.init();
+    const w = CSL.createWorld({ seed: 4321 });
+    const B = 'main';
+    /* 前 89 tick 不足一個 90-tick 窗口 */
+    for (let i = 0; i < 89; i++) { CSL.step(w); O.recordTick(w, B, null); }
+    const early = O.rateSeries({ tick: w.tick }, B);
+    const earlyAllMissing = early.points.every((p) => p.missing);
+    for (let i = 0; i < 400; i++) { CSL.step(w); O.recordTick(w, B, null); }
+    /* 序列點落在 SAMPLE_EVERY 的倍數上，readout() 則以當前 tick 為右端；
+       先把模型時鐘推到取樣點，兩者的窗口右端才是同一個 tick。 */
+    while (w.tick % O.SAMPLE_EVERY !== 0) { CSL.step(w); O.recordTick(w, B, null); }
+    const seriesTick = w.tick;   // 之後的斷裂情節會推進時鐘，比對要用取序列當下的 tick
+    const s = O.rateSeries({ tick: seriesTick }, B);
+    const last = s.points[s.points.length - 1];
+    const rl = O.readout(w, B, null, 'flux_lung_rate');
+    const rt = O.readout(w, B, null, 'flux_tissue_rate');
+    const ru = O.readout(w, B, null, 'usage_rate');
+    const near = (a, b) => Math.abs(a - b) <= 1e-9;
+    /* 刻意跳過 30 tick（模擬觀察斷裂）後，跨斷裂的點必須是 missing */
+    for (let i = 0; i < 30; i++) CSL.step(w);
+    for (let i = 0; i < 30; i++) { CSL.step(w); O.recordTick(w, B, null); }
+    const afterGap = O.rateSeries({ tick: w.tick }, B);
+    const gapPoints = afterGap.points.filter((p) => p.t > 489 && p.t <= w.tick);
+    const someMissingAfterGap = gapPoints.some((p) => p.missing);
+    const tickBefore = w.tick, epochBefore = O.sessionEpoch;
+    O.rateSeries({ tick: w.tick }, B);
+    return {
+      earlyAllMissing, earlyAvailable: early.available,
+      lastAlignedToNow: !!last && last.t === seriesTick,
+      matchesReadout: last && !last.missing && last.t === seriesTick && near(last.lung, rl.value) && near(last.tissue, rt.value) && near(last.usage, ru.value),
+      windowTicks: s.window.ticks, observed: s.observedPoints, total: s.totalPoints,
+      noInterpolation: s.points.every((p) => p.missing || (isFinite(p.lung) && isFinite(p.tissue) && isFinite(p.usage))),
+      someMissingAfterGap,
+      readOnly: w.tick === tickBefore && O.sessionEpoch === epochBefore,
+      missingHaveNoValues: s.points.every((p) => !p.missing || (p.lung === undefined && p.tissue === undefined && p.usage === undefined)),
+    };
+  })()`);
+  check('rate-series-window-semantics',
+    r.earlyAllMissing && !r.earlyAvailable && r.lastAlignedToNow && r.matchesReadout && r.windowTicks === 90
+      && r.observed > 0 && r.noInterpolation && r.someMissingAfterGap && r.readOnly && r.missingHaveNoValues,
+    JSON.stringify(r));
+}
+
 let fails = 0;
 console.log('=== v0.3 Atlas self-built tests ===');
 for (const r of results) { console.log((r.pass ? 'PASS' : 'FAIL') + '  ' + r.name + (r.pass ? '' : '   ' + r.detail)); if (!r.pass) fails++; }

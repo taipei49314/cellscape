@@ -99,6 +99,7 @@
       this._lastKey = key;
       this._setBody(this.renderNow());
       this.drawChart(view, branchId, entityId);
+      this.drawRateChart(view, branchId);
     },
 
     render() {
@@ -119,6 +120,7 @@
       if (this.activeTab === 'now') {
         const { view, branchId, entityId } = this._sel();
         this.drawChart(view, branchId, entityId);
+        this.drawRateChart(view, branchId);
       }
       this._bind(body);
     },
@@ -309,7 +311,99 @@
             || `守恆帳（每 30 tick 檢查，殘差 ≤1e-6）：初始 ${view.ledger.initialTotal.toFixed(3)}、累積輸入 ${view.ledger.input.toFixed(3)}、使用 ${view.ledger.usage.toFixed(3)}、呼出 ${view.ledger.expelled.toFixed(3)}、最近殘差 ${view.ledger.lastResidual.toExponential(2)}。`)}</div></details>` : ''}</div>
         <div class="note">${esc(NW('spo2Note') || '這裡的百分比是相對模型容量，不是 SpO₂；速率以模型時間換算（dt = 1/30 模型秒）。')}</div>
         <div class="chartBox"><canvas id="loadChart" width="10" height="10"></canvas>
-          <div id="chartNote" class="dim tiny"></div></div>`;
+          <div id="chartNote" class="dim tiny"></div></div>
+        <div class="chartBox"><canvas id="rateChart" width="10" height="10"></canvas>
+          <div id="rateLegend" class="dim tiny"></div>
+          <div id="rateNote" class="dim tiny"></div></div>`;
+    },
+
+    /* 速率曲線（T-319，產品 Gate C）：肺端裝載／組織端卸載／組織使用三條速率。
+       資料來自 Observe.rateSeries——與「看此刻」讀值同一套滾動窗口算法。
+       契約：窗口不完整的點不畫、不連線、不以 0 頂替；線型與圖例文字並存，
+       顏色不是唯一通道；右緣恆為「現在」。 */
+    drawRateChart(view, branchId) {
+      const cv = $('rateChart');
+      if (!cv) return;
+      const NW = (k, vars) => (CSL.I18n ? CSL.I18n.now(k, vars) : null);
+      const dpr = global.devicePixelRatio || 1;
+      const wCss = cv.parentElement.clientWidth || 240, hCss = 104;
+      if (cv.width !== wCss * dpr) { cv.width = wCss * dpr; cv.height = hCss * dpr; cv.style.width = wCss + 'px'; cv.style.height = hCss + 'px'; }
+      const g = cv.getContext('2d');
+      g.setTransform(dpr, 0, 0, dpr, 0, 0);
+      g.clearRect(0, 0, wCss, hCss);
+      const legend = $('rateLegend'), note = $('rateNote');
+      /* 只需要模型時鐘作為右緣；view.tick 即 ViewContext 的 tick（不另取世界物件） */
+      const series = CSL.Observe.rateSeries({ tick: view.tick }, branchId);
+      const SERIES = [
+        { key: 'lung', color: '#6fd3ff', dash: [], label: NW('rateLung') || '肺端裝載' },
+        { key: 'tissue', color: '#ffd27a', dash: [5, 3], label: NW('rateTissue') || '組織卸載' },
+        { key: 'usage', color: '#9df5c2', dash: [2, 3], label: NW('rateUsage') || '組織使用' },
+      ];
+      if (legend) {
+        legend.innerHTML = SERIES.map((sr) => '<span style="color:' + sr.color + '">'
+          + (sr.dash.length ? (sr.dash[0] > 3 ? '– – ' : '· · ') : '—— ') + esc(sr.label) + '</span>').join('　');
+      }
+      if (!series.available) {
+        g.fillStyle = 'rgba(160,180,200,.55)';
+        g.font = '11px sans-serif';
+        const why = series.reason === 'disabled'
+          ? (NW('rateDisabled') || '觀察模組已停用（明示錯誤）')
+          : (NW('rateMissing') || '缺資料：尚未累積完整的速率窗口');
+        g.fillText(why, 8, hCss / 2);
+        if (note) note.textContent = NW('rateNoteMissing')
+          || '尚無速率曲線——窗口未填滿即為缺資料，不以 0 或虛線頂替。';
+        return;
+      }
+      const pts = series.points;
+      const t0 = pts[0].t, tEnd = pts[pts.length - 1].t;
+      const span = Math.max(1, tEnd - t0);
+      let vMax = 0;
+      for (const p of pts) if (!p.missing) vMax = Math.max(vMax, p.lung, p.tissue, p.usage);
+      if (!(vMax > 0)) vMax = 1;
+      const x = (t) => 34 + (wCss - 42) * ((t - t0) / span);
+      const y = (v) => hCss - 14 - (hCss - 24) * Math.max(0, Math.min(1, v / vMax));
+      g.strokeStyle = 'rgba(140,160,180,.35)';
+      g.strokeRect(34.5, 4.5, wCss - 42, hCss - 18);
+      g.font = '9px sans-serif'; g.fillStyle = 'rgba(160,180,200,.8)';
+      g.fillText(vMax.toFixed(2), 2, 10);
+      g.fillText('0', 2, hCss - 14);
+      g.fillText('−' + (span / 30).toFixed(0) + ' ' + (NW('modelSecUnit') || '模型秒'), 36, hCss - 2);
+      g.fillText(NW('nowLabel') || '現在', wCss - 26, hCss - 2);
+      /* 介入標記：與負載曲線同一套來源（view.actions），不另行推論 */
+      for (const a of view.actions || []) {
+        if (a.tick < t0 || a.tick > tEnd) continue;
+        const ax = x(a.tick);
+        g.strokeStyle = 'rgba(255,210,120,.45)';
+        g.setLineDash([]);
+        g.beginPath(); g.moveTo(ax, 5); g.lineTo(ax, hCss - 14); g.stroke();
+      }
+      /* 三條線：只連接「相鄰且都有觀測」的點；缺資料處斷開 */
+      for (const sr of SERIES) {
+        g.strokeStyle = sr.color; g.lineWidth = 1.5; g.setLineDash(sr.dash);
+        g.beginPath();
+        let pen = false;
+        for (let i = 0; i < pts.length; i++) {
+          const p = pts[i];
+          if (p.missing) { pen = false; continue; }
+          const contiguous = i > 0 && !pts[i - 1].missing && (p.t - pts[i - 1].t === series.everyTicks);
+          if (pen && contiguous) g.lineTo(x(p.t), y(p[sr.key]));
+          else g.moveTo(x(p.t), y(p[sr.key]));
+          pen = true;
+        }
+        g.stroke();
+      }
+      g.setLineDash([]);
+      if (note) {
+        const missing = series.totalPoints - series.observedPoints;
+        note.textContent = (NW('rateNoteOk', {
+          win: (series.window.seconds).toFixed(0),
+          obs: String(series.observedPoints),
+          total: String(series.totalPoints),
+          max: vMax.toFixed(2),
+        }) || ('速率以 ' + series.window.seconds.toFixed(0) + ' 模型秒滾動窗口計算（模型單位／模型秒）；縱軸上限 '
+              + vMax.toFixed(2) + '。已觀測 ' + series.observedPoints + '／' + series.totalPoints + ' 點'
+              + (missing ? '，其餘為缺資料（留空白，不插補）' : '') + '。'));
+      }
     },
 
     /* 曲線：只在樣本存在處畫線；缺口不連接；介入點畫時間標記。
