@@ -13,6 +13,11 @@ const results = [];
 const check = (name, pass, detail) => { results.push({ name, pass, detail: detail || '' }); };
 const run = (s) => vm.runInContext(s, c, { timeout: 60000 });
 
+/* 共用：把 JS 原始碼的註解剝掉再掃。第一版只濾「行首是註解記號」的行，對
+   「/* 開頭、續行沒有 * 前綴」的區塊註解無效——pool run 實際誤判過一次：
+   chapters.js 檔頭寫著「不呼叫 Observe.onWorldInstalled()」被當成真的呼叫。 */
+const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*/g, '$1 ');
+
 /* 1. 內容完整性：8 卡 × 4 問 = 32；主張/來源可解析；能力列舉合法；純資料 */
 {
   const r = run(`(()=>{
@@ -349,8 +354,8 @@ const run = (s) => vm.runInContext(s, c, { timeout: 60000 });
       return { hits };
     })()`);
     /* 原始碼層：扣掉本檔自己的詞表與註解行後再掃，避免自我命中 */
-    const srcLines = hemoSrc.split('\n').filter((ln) => !/^\s*(\/\*|\*|\/\/)/.test(ln));
-    const srcHits = srcLines.filter((ln) => BANNED.test(ln)).map((ln) => ln.trim().slice(0, 60));
+    /* 原始碼層：剝掉註解後再掃，避免把「說明自己不講什麼」的註解當成違規 */
+    const srcHits = (stripComments(hemoSrc).match(BANNED) || []).slice(0, 3);
     check('hemo-no-unregistered-vocabulary', r.hits.length === 0 && srcHits.length === 0,
       JSON.stringify({ data: r.hits, src: srcHits }));
   }
@@ -399,6 +404,99 @@ const run = (s) => vm.runInContext(s, c, { timeout: 60000 });
                entryKey: !!(CSL.ContentEN && CSL.ContentEN.shell && CSL.ContentEN.shell['hemo.entry']) };
     })()`);
     check('hemo-en-keys-complete', r.missing.length === 0 && r.extra.length === 0 && r.entryKey,
+      JSON.stringify(r));
+  }
+}
+
+/* 17–20. 章節 B/C 學習控制器（T-321 刀 K2）。關卡是純述詞，吃 ctx 快照，
+   可在 VM 內以合成情境驗證，不需要 DOM。 */
+{
+  vm.runInContext(load('chapters.js'), c, { filename: 'chapters.js' });
+
+  /* 17. 關卡讀**世界事實**而非事件流：把參數在進章前就設成目標值（此時
+         applyCommand 的 before===v 早退，全程零事件、w.actions 為空），
+         B1 仍必須成立。這是報告預測最可能寫錯的一處。 */
+  {
+    const r = run(`(()=>{
+      const Ch = CSL.Chapters;
+      const w = CSL.createWorld({ seed: 1212 });
+      /* 直接把世界事實設成非基準值，完全不經事件 */
+      w.params.temperature = 39.5;
+      const ctx = { world: w, baseline: { tissueLevel: 0.4, everMoved: true }, selfReport: '',
+                    main: { branchA: null, activeIsA: false, seenA: false, seenChain: false, expandedEventId: null } };
+      const evB = Ch.evaluate('B', ctx);
+      const b1 = evB.gates.find((g) => g.id === 'B1');
+      return { actions: w.actions.length, events: w.events.length, b1: !!(b1 && b1.met),
+               met: evB.met, total: evB.total };
+    })()`);
+    check('chapters-gate-reads-world-not-events',
+      r.actions === 0 && r.b1 === true && r.total === 3, JSON.stringify(r));
+  }
+
+  /* 18. 不按時間前進：同一個 ctx 下跑很多 tick，未達成的關卡不得自己變成達成；
+         達成條件成立的那一刻才成立。 */
+  {
+    const r = run(`(()=>{
+      const Ch = CSL.Chapters;
+      const w = CSL.createWorld({ seed: 3434 });
+      const base = { tissueLevel: w.compartments.tissue.stock / w.compartments.tissue.capacity, everMoved: false };
+      const mk = () => ({ world: w, baseline: base, selfReport: '',
+        main: { branchA: null, activeIsA: false, seenA: false, seenChain: false, expandedEventId: null } });
+      let everMetC1 = false;
+      for (let i = 0; i < 600; i++) { CSL.step(w); if (Ch.evaluate('C', mk()).gates[0].met) everMetC1 = true; }
+      const beforeSelf = Ch.evaluate('C', mk());
+      const withSelf = Ch.evaluate('C', Object.assign(mk(), { selfReport: '因為供氧下降所以組織庫存下降' }));
+      const c4Before = beforeSelf.gates.find((g) => g.id === 'C4').met;
+      const c4After = withSelf.gates.find((g) => g.id === 'C4').met;
+      return { everMetC1, c4Before, c4After, tick: w.tick };
+    })()`);
+    check('chapters-no-time-based-advance',
+      r.everMetC1 === false && r.c4Before === false && r.c4After === true, JSON.stringify(r));
+  }
+
+  /* 19. 控制器絕不寫模型：呼叫 evaluate／viewModel／render 之後，
+         世界的 exportRun 與 digest 必須逐位元不變；模組也不得呼叫 queueCommand。 */
+  {
+    const srcChapters = load('chapters.js');
+    const r = run(`(()=>{
+      const Ch = CSL.Chapters;
+      const w = CSL.createWorld({ seed: 5656 });
+      for (let i = 0; i < 120; i++) CSL.step(w);
+      const before = CSL.exportRun(w), dBefore = CSL.digest(w);
+      const ctx = { world: w, baseline: { tissueLevel: 0.5, everMoved: true }, selfReport: 'x',
+                    main: { branchA: {}, activeIsA: true, seenA: true, seenChain: true, expandedEventId: 3 } };
+      const evB = Ch.evaluate('B', ctx), evC = Ch.evaluate('C', ctx);
+      const html = Ch.render({ chapterA: { available: false, reason: 'no-tour', step: null, total: null, active: false },
+                               chapters: [evB, evC], baseline: ctx.baseline });
+      return { readOnly: CSL.exportRun(w) === before && CSL.digest(w) === dBefore,
+               cComplete: evC.complete, htmlLen: html.length,
+               saysNoJudgement: /不判定|does not judge/.test(html) };
+    })()`);
+    const writesModel = /queueCommand|setParam|onWorldInstalled/.test(stripComments(srcChapters));
+    check('chapters-never-write-model',
+      r.readOnly && r.cComplete && r.saysNoJudgement && writesModel === false,
+      JSON.stringify({ ...r, writesModel }));
+  }
+
+  /* 20. EN 鍵完整：每個關卡的 gate.<id>、每章的 chapter.<id>／goal.<id>
+         與模組用到的鍵都要有 EN，且零多餘。 */
+  {
+    const r = run(`(()=>{
+      const Ch = CSL.Chapters;
+      const need = [];
+      for (const ch of Ch.CHAPTERS) {
+        need.push('chapter.' + ch.id, 'goal.' + ch.id);
+        for (const g of ch.gates) need.push('gate.' + g.id);
+      }
+      need.push('title','close','doneMark','openMark','aProgress','aOf','aStep','aNotStarted',
+                'selfReportLabel','noJudgement');
+      need.sort();
+      const have = Object.keys((CSL.ContentEN && CSL.ContentEN.chapters) || {}).sort();
+      return { missing: need.filter((k) => have.indexOf(k) < 0),
+               extra: have.filter((k) => need.indexOf(k) < 0),
+               entryKey: !!(CSL.ContentEN && CSL.ContentEN.shell && CSL.ContentEN.shell['learn.entry']) };
+    })()`);
+    check('chapters-en-keys-complete', r.missing.length === 0 && r.extra.length === 0 && r.entryKey,
       JSON.stringify(r));
   }
 }

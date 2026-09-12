@@ -204,3 +204,13 @@ details summary{cursor:pointer}
 .hemoSpark{display:flex;align-items:flex-end;gap:1px;height:26px;margin:4px 0 8px}
 .hemoSpark i{flex:1 1 auto;background:#6fd3ff;min-height:1px}
 .hemoLayer{border-top:1px solid rgba(140,160,180,.2);padding:6px 0;font-size:12px}
+
+/* 章節 B/C 學習控制器（T-321 刀 K2） */
+.learnBody h3{margin:0 0 6px;font-size:14px}
+.chapBlock{border-top:1px solid rgba(140,160,180,.2);padding:8px 0}
+.gateList{list-style:none;margin:4px 0 0;padding:0;font-size:12px}
+.gateList li{padding:2px 0}
+.gateList .gateMet{color:#9df5c2}
+.gateList .gateOpen{color:rgba(190,205,220,.75)}
+.chapInput{width:100%;box-sizing:border-box;background:rgba(20,28,36,.7);color:inherit;
+  border:1px solid rgba(140,160,180,.35);border-radius:3px;font:inherit;padding:4px;margin:4px 0}

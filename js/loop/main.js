@@ -184,6 +184,7 @@
             this._tickUI(true);
             CSL.Atlas.onImport();
             if (CSL.Hemo) CSL.Hemo.close();   // 匯入＝換世界：關閉放大視角，不讓舊時點畫面殘留
+            if (CSL.Chapters) CSL.Chapters.onImport();   // 章節進度與自述歸零（不清觀察歷史）
             this.api.subtitle('已載入執行包：run ' + this.world.runId + '（tick ' + this.world.tick + '）', 5);
           } catch (err) { this.api.subtitle(String(err.message), 6); }
         };
@@ -234,6 +235,7 @@
         this._syncLang();
         CSL.Atlas.render();            // 檢閱內容若開啟即重繪；未開啟時 render 為安全無操作
         if (CSL.Hemo) CSL.Hemo.tick();   // 語言切換：放大視角開啟中即以新語言重繪
+        if (CSL.Chapters) CSL.Chapters.tick();
       });
       $('r3d').addEventListener('click', (e) => {
         const id = CSL.Render.pickAt(e.clientX, e.clientY, this.world);
@@ -246,6 +248,7 @@
         const hemo = e.target.closest('#hemoBtn');
         if (hemo && global.CSL.Hemo) CSL.Hemo.open();   // T-321 K1：血紅素放大視角（模型欄位，唯讀）
       });
+      $('learnBtn').addEventListener('click', () => { if (global.CSL.Chapters) CSL.Chapters.open(); });   // T-321 K2
       $('evidenceToggle').addEventListener('click', () => this._panel('evidence'));
       $('insToggle').addEventListener('click', () => this._panel('inspector'));
       $('eventList').addEventListener('click', (e) => {
@@ -317,6 +320,7 @@
       if (CSL.Atlas) CSL.Atlas.tick(view, this.activeIsA && this.branchA ? 'A' : 'B',
         this.selectedId != null ? this.selectedId : this.followedId);
       if (CSL.Hemo) CSL.Hemo.tick();   // T-321 K1：放大視角開啟中才重繪，避免過期讀值充數
+      if (CSL.Chapters) CSL.Chapters.tick();   // T-321 K2：章節控制器只更新旗標與畫面，絕不動世界
       const ro = CSL.readout(view);
       /* HUD 數值欄位在因果鏈展開期間**持續更新**——鏈持久化不得凍結
          時鐘/tick/水位/檢閱（EXPANDED_CHAIN_HUD_LIVE 契約） */

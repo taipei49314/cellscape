@@ -20,6 +20,7 @@
     shell: {
       'tab.know': 'Know it', 'tab.now': 'Right now', 'tab.mech': 'How it works', 'tab.src': 'Sources',
       'nav.follow': '◎ Follow a red blood cell',
+      'learn.entry': '📘 Learning chapters',
       'hemo.entry': '🔎 Hemoglobin zoom (model field)',
       'params.perfusion': 'Tissue perfusion',
       'view.explore': 'Free exploration', 'view.overview': 'Circulation overview',
@@ -142,6 +143,31 @@
       'C-model-temp':     'Body temperature multiplies the O₂ usage rate by a Q10 factor (2^((T−37)/10)); CO₂ production follows usage.',
       'C-model-perfusion':'The perfusion parameter represents the share of blood flow reaching this tissue bed and only multiplies the tissue-side unloading flux; this model has a single tissue bed and does not model any other vascular bed.',
       'C-model-anemia':   'The anemia parameter only gates the lung-side loading ceiling ((1 − anemia) × capacity); it does not retroactively change oxygen already carried, and the conservation ledger is unchanged.'
+    },
+
+    /* 章節 B/C 學習控制器（chapters.js；缺鍵退回繁中） */
+    chapters: {
+      title: 'Learning chapters (gated)',
+      close: 'Close',
+      doneMark: '✓ ',
+      openMark: '○ ',
+      aProgress: 'Chapter A (guided follow): step ',
+      aOf: ' of ',
+      aStep: '',
+      aNotStarted: 'Chapter A (guided follow): not started - press "Follow a red blood cell" to walk it once.',
+      'chapter.B': 'Chapter B: change one condition yourself',
+      'chapter.C': 'Chapter C: replay, compare, and state the cause yourself',
+      'goal.B': 'You make the intervention and watch how the model responds. The controller only reads model facts; it never moves a slider for you.',
+      'goal.C': 'Use the A/B sides and the event log to say which thing caused which. The controller does not judge whether you are right.',
+      'gate.B1': 'Move any model parameter away from its baseline value (slider or drug preset).',
+      'gate.B2': 'Make the tissue store level differ from where it was when you entered this chapter by more than one percentage point.',
+      'gate.B3': 'Put that parameter back to its baseline value and see whether the model returns on its own.',
+      'gate.C1': 'Create the A/B baseline branch (move the lung supply or anemia slider, or press any drug preset).',
+      'gate.C2': 'Switch to the A baseline side and look at it once.',
+      'gate.C3': 'Expand a causal chain once in the event log.',
+      'gate.C4': 'Write one sentence with the cause as you see it (collected, never graded; not written into the model, not in the export pack, not uploaded).',
+      selfReportLabel: 'Your causal account (collected, never graded; it disappears on reload, is not written into the model, is not in the export pack, and is not uploaded)',
+      noJudgement: 'This chapter does not judge whether your account is right - judging learning outcomes needs the human five-person usability round, which has not been run. The controller also never moves a slider for you.',
     },
 
     /* 血紅素放大視角（hemo.js；缺鍵退回繁中） */
