@@ -48,6 +48,10 @@
         url: 'https://www.nature.com/articles/s41591-023-02327-2',
         use: 'HLCA 的原始研究與資料方法；人體來源、組織、狀態需依具體子資料集記錄。',
         checkedOn: '2026-09-08' },
+      { id: 'S12', publisher: 'NCBI Bookshelf / StatPearls', title: 'Insulin',
+        url: 'https://www.ncbi.nlm.nih.gov/books/NBK560688/',
+        use: '胰島素由胰臟 β 細胞分泌、與受器結合後促使葡萄糖轉運子轉位至細胞表面促進攝取之背景；不提供本模型係數（分泌/衰退速率與攝取率為工程近似）。',
+        checkedOn: '2026-09-13' },
       { id: 'S11', publisher: 'NCBI Bookshelf / StatPearls', title: 'Physiology, Immune Response',
         url: 'https://www.ncbi.nlm.nih.gov/books/NBK539801/',
         use: '感染時嗜中性球為最先被招募的第一線細胞之背景；不提供本模型係數（招募節奏與清除量為工程近似）。',
@@ -317,6 +321,8 @@
       'C-model-volume': { text: '血漿容積為獨立載體小帳（0–5.0）：流入由 fluidRate 決定、流出為溫度衍生出汗 0.0002×max(0, temperature−37)／tick；容積比 volFrac 乘移動流速與組織端卸載通量，<0.70 觸發 volumeLow（≥0.80 解除）。聚合模型指數，非個體生理。', contentType: 'model_assumption', sourceIds: ['S10'], implRef: 'js/loop/core.js step() 2.5／5.6／容積閾值', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 1.0.0；非脫水醫學、非輸液建議。' },
       'C-model-infection': { text: '感染嚴重度（0–1）釘在組織微血管（TISSUE_CAP）：嗜中性球自骨髓池進入循環、抵組織微血管即外滲，每次外滲清除 0.125 感染嚴重度，歸零即發感染清除事件。招募節奏（每 90 tick 一顆）為工程近似。', contentType: 'model_assumption', sourceIds: ['S11'], implRef: 'js/loop/core.js step() 2.4／3.4／4.5 與 applyCommand infection', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 1.1.0；非感染症醫學、非用藥建議。' },
       'C-model-wbc-8': { text: '嗜中性球同時在循環上限 8 顆，為固定抽樣代表；WBC 不攜氧（負載恆 0）、不適用 RBC 世代輪替。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/core.js WBC_MAX／step() 招募與外滲', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 1.1.0；非全身白血球總量。' },
+      'C-model-glucose': { text: '血糖以「相對禁食基線的升高指數」近似（0 起始、0–4.0）：連續攝入參數 glucoseIntake 流入、組織攝取流出（基線項＋胰島素放大項）；指數 ≥0.55 觸發 glucoseHigh、<0.45 解除（遲滯）。聚合模型指數，非臨床血糖值。', contentType: 'model_assumption', sourceIds: ['S12'], implRef: 'js/loop/core.js step() 5.7 與 glucoseHigh 閾值', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 1.2.0；非糖尿病醫學、非飲食或用藥建議。' },
+      'C-model-insulin': { text: '胰島素水位（0.30 禁食基線–1.0）對血糖指數高值每 tick 分泌上升、回落後向基線衰退；組織攝取率＝胰島素非依賴的基線項（涵蓋紅血球等基礎糖耗敘事）＋胰島素放大項（轉運子轉位近似）。工程近似，非胰島素治療模型。', contentType: 'model_assumption', sourceIds: ['S12'], implRef: 'js/loop/core.js step() 5.7', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 1.2.0；非內分泌醫學、非胰島素劑量建議。' },
       'C-model-rbc-turnover': { text: 'RBC 滿 RBC_MAX_LOOPS 圈後退役並在肺端同槽替換；殘餘負載記入 expelled，總量固定 48。', contentType: 'model_assumption', sourceIds: [], implRef: 'js/loop/model.js RBC_MAX_LOOPS；js/loop/core.js step() 3.5', reviewStatus: 'verified-implementation', supportedLimit: 'MODEL_VERSION 0.8.0；世代輪替示意，非 120 天生理壽命校準。' }
     },
 
