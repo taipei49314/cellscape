@@ -593,6 +593,47 @@ const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^
       && r.stopped && r.hasNavApi && r.subs > 0, JSON.stringify(r));
 }
 
+/* 24. F2 拓樸雙床血流再分配（0.7.0）：EDGES 含 primary+secondary tissue site；
+       perfusion=1 時次床權重為 0（＝0.6.0 單床）；perfusion=0.4 時次床有卸載。 */
+{
+  const r = run(`(()=>{
+    const edges = CSL.EDGES;
+    const tissue = edges.filter((e) => e.exchange === 'tissue');
+    const sites = tissue.map((e) => e.perfusionSite);
+    const version = CSL.MODEL_VERSION;
+    function unloadAt(perfusion, site) {
+      const w = CSL.createWorld({ seed: 77 });
+      w.params.perfusion = perfusion;
+      /* 把一顆 RBC 丟到指定組織床並給高負載 */
+      const id = 1;
+      const eIdx = edges.findIndex((e) => e.perfusionSite === site);
+      w.entities[id].edge = eIdx; w.entities[id].s = 0.5; w.entities[id].load = 1;
+      w.compartments.tissue.stock = 0;
+      const before = w.entities[id].load;
+      CSL.step(w);
+      return before - w.entities[id].load;
+    }
+    const primary1 = unloadAt(1.0, 'primary');
+    const secondary1 = unloadAt(1.0, 'secondary');
+    const primary04 = unloadAt(0.4, 'primary');
+    const secondary04 = unloadAt(0.4, 'secondary');
+    return {
+      version, nTissue: tissue.length, sites: tissue.map((e) => e.perfusionSite),
+      primary1, secondary1, primary04, secondary04,
+      at1SecondaryZero: Math.abs(secondary1) < 1e-12,
+      at1PrimaryPositive: primary1 > 0,
+      at04SecondaryPositive: secondary04 > 0,
+      at04PrimaryLess: primary04 < primary1
+    };
+  })()`);
+  check('f2-dual-bed-perfusion-redistribution',
+    r.version === '0.7.0' && r.nTissue === 2
+      && r.sites.join(',') === 'primary,secondary'
+      && r.at1SecondaryZero && r.at1PrimaryPositive
+      && r.at04SecondaryPositive && r.at04PrimaryLess,
+    JSON.stringify(r));
+}
+
 let fails = 0;
 console.log('=== v0.3 Atlas self-built tests ===');
 for (const r of results) { console.log((r.pass ? 'PASS' : 'FAIL') + '  ' + r.name + (r.pass ? '' : '   ' + r.detail)); if (!r.pass) fails++; }

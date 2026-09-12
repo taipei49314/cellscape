@@ -16,7 +16,8 @@
     { id: 'PULM_VEIN',     label: '肺靜脈',     en: 'Pulmonary Vein',     baseTicks: 45, exchange: null },
     { id: 'HEART_L',       label: '左心',       en: 'Left Heart',         baseTicks: 36, exchange: null },
     { id: 'ARTERY_SYS',    label: '體循環動脈', en: 'Systemic Artery',    baseTicks: 120, exchange: null },
-    { id: 'TISSUE_CAP',    label: '組織微血管', en: 'Tissue Capillary',   baseTicks: 90, exchange: 'tissue' },
+    { id: 'TISSUE_CAP',    label: '組織微血管', en: 'Tissue Capillary',   baseTicks: 90, exchange: 'tissue', perfusionSite: 'primary' },
+    { id: 'TISSUE_CAP_2',  label: '組織微血管（次要床）', en: 'Tissue Capillary (secondary)', baseTicks: 45, exchange: 'tissue', perfusionSite: 'secondary' },
     { id: 'VEIN_SYS',      label: '體循環靜脈', en: 'Systemic Vein',      baseTicks: 120, exchange: null },
     { id: 'HEART_R',       label: '右心',       en: 'Right Heart',        baseTicks: 36, exchange: null },
   ];
