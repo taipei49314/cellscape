@@ -22,7 +22,7 @@ const check = (name, pass, detail) => { results.push({ name, pass, detail }); };
 {
   const c = freshEnv();
   const v = run(c, `CSL.MODEL_VERSION`);
-  check('MODEL_VERSION=0.9.0', v === '0.9.0', `got ${v}`);
+  check('MODEL_VERSION=0.10.0', v === '0.10.0', `got ${v}`);
 }
 
 // 2+3. 實體數固定 48、ID 唯一、600 tick 守恆殘差 ≤ 1e-6、每 tick 每 ID 唯一所在

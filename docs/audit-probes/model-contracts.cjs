@@ -302,7 +302,65 @@ const SETUP = `
   check('digest-covers-loops', r.onlyLoopsDiff && r.differs, JSON.stringify(r));
 }
 
-console.log('=== model behaviour contracts (0.3.0 / 0.4.0 / 0.5.0 / 0.5.1 / 0.6.0 / 0.8.0 / 0.9.0) ===');
+/* 13. 海拔中立性（0.10.0／T-347）：altitudeM=0 與未設定的世界逐拍摘要全等
+       （沿用 perfusion-neutral-at-1 前例；未修 core 上此檢查空洞通過——
+       applyCommand 對未知鍵為 no-op，fail-first 證據由 14／15 承擔）。 */
+{
+  const c = freshEnv();
+  const r = run(c, `(()=>{${SETUP}
+    const a = CSL.createWorld({ seed: 864 });
+    applyParams(a, { altitudeM: 0 });
+    const b = CSL.createWorld({ seed: 864 });
+    runTicks(b, 5);
+    for (let i = 0; i < 400; i++) { CSL.step(a); CSL.digestStep(a); CSL.step(b); CSL.digestStep(b); }
+    const same = a.digestChain.length === b.digestChain.length
+      && a.digestChain.every((v, i) => v === b.digestChain[i]);
+    return { same, n: a.digestChain.length };
+  })()`);
+  check('altitude-neutral-at-0', r.same, JSON.stringify(r));
+}
+
+/* 14. 海拔降低遞送（單調）：輸入與肺端裝載同乘氣壓比值 ⇒ 使用量與平均負載
+       隨海拔單調下降，守恆殘差不變（未修 core 上 applyCommand 對 altitudeM
+       no-op ⇒ 單調斷言失敗＝fail-first 證據）。 */
+{
+  const c = freshEnv();
+  const r = run(c, `(()=>{${SETUP}
+    const at = (h) => {
+      const w = CSL.createWorld({ seed: 24680 });
+      applyParams(w, { altitudeM: h });
+      runTicks(w, 600);
+      const meanLoad = Object.values(w.entities).reduce((s2, e) => s2 + e.load / e.cap, 0) / Object.keys(w.entities).length;
+      return { usage: w.ledger.usage, meanLoad, residual: Math.abs(CSL.ledgerResidual(w)) };
+    };
+    const sea = at(0), mid = at(2500), high = at(5000);
+    return { seaU: sea.usage, midU: mid.usage, highU: high.usage,
+             seaL: sea.meanLoad, midL: mid.meanLoad, highL: high.meanLoad,
+             residual: Math.max(sea.residual, mid.residual, high.residual) };
+  })()`);
+  check('altitude-lowers-delivery',
+    r.seaU > r.midU && r.midU > r.highU && r.seaL > r.midL && r.midL > r.highL
+      && r.residual <= 1e-6, JSON.stringify(r));
+}
+
+/* 15. 高地過度換氣：同參數下高海拔血中 CO₂ 指數低於海平面（模型指數，
+       非臨床酸鹼判讀）；未修 core 上 co2 不變 ⇒ 失敗。 */
+{
+  const c = freshEnv();
+  const r = run(c, `(()=>{${SETUP}
+    const co2At = (h) => {
+      const w = CSL.createWorld({ seed: 9090 });
+      applyParams(w, { altitudeM: h });
+      runTicks(w, 600);
+      return w.co2.blood;
+    };
+    const sea = co2At(0), high = co2At(5000);
+    return { sea, high, drops: high < sea, nonNegative: high >= 0 };
+  })()`);
+  check('altitude-hyperventilation-lowers-co2', r.drops && r.nonNegative, JSON.stringify(r));
+}
+
+console.log('=== model behaviour contracts (0.3.0 / 0.4.0 / 0.5.0 / 0.5.1 / 0.6.0 / 0.8.0 / 0.9.0 / 0.10.0) ===');
 let fails = 0;
 for (const r of results) {
   console.log((r.pass ? 'PASS' : 'FAIL') + '  ' + r.name + '   ' + r.detail);
