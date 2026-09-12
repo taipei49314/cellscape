@@ -15,7 +15,11 @@
      （MODEL_RULE_IDENTITY 契約）。
      0.2.2：digest 納入 eventSeq（DIGEST_SCOPE 修復）＋事件 kind 相依 payload
      深驗證。舊包之 digestChainTail 以舊正規化計算，無法跨版延續，故顯式拒絕。 */
-  CSL.MODEL_VERSION = '0.8.0';   /* 0.8.0：RBC 世代輪替（T-329 刀 F3）——滿 RBC_MAX_LOOPS 圈退役，
+  CSL.MODEL_VERSION = '0.9.0';   /* 0.9.0：檢查點身分契約修補（T-343）——digest 實體序列納入
+     e.loops：0.8.0 起 loops 影響未來演化（滿圈退役時機），未納入即「摘要相等」
+     不再保證後續一致（實證：loops 0 vs 7 digest 相等）。digest 正規化變更屬
+     MODEL_RULE_IDENTITY 身分契約，舊版執行包無法跨版延續，匯入顯式拒絕。
+     0.8.0：RBC 世代輪替（T-329 刀 F3）——滿 RBC_MAX_LOOPS 圈退役，
      殘餘 load 記 expelled，同槽肺端替換；總量仍 48。
      0.7.0：拓樸版血流再分配（T-329 刀 F2）——EDGES 新增 TISSUE_CAP_2 次要組織床；
      perfusion≤1 時主床乘 perfusion、次床乘 max(0,1−perfusion)，合計名目血流≈1；perfusion>1 全給主床。1.0＝0.6.0 單床行為。
@@ -188,7 +192,8 @@
     const ids = Object.keys(w.entities).map(Number).sort((a, b) => a - b);
     for (const id of ids) {
       const e = w.entities[id];
-      s += id + ':' + e.edge + ':' + f6(e.s) + ':' + f6(e.load) + ':' + f6(e.cap) + ';' ;
+      /* e.loops 必須入摘要（0.9.0）：影響退役時機 ⇒ 影響未來演化 */
+      s += id + ':' + e.edge + ':' + f6(e.s) + ':' + f6(e.load) + ':' + f6(e.cap) + ':' + e.loops + ';' ;
     }
     return fnv1a(s);
   };

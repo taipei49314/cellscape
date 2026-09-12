@@ -281,7 +281,28 @@ const SETUP = `
     r.monotonic && r.loadBacksUp && r.residual <= 1e-6, JSON.stringify(r));
 }
 
-console.log('=== model behaviour contracts (0.3.0 / 0.4.0 / 0.5.0 / 0.5.1 / 0.6.0) ===');
+/* 12. digest 涵蓋實體世代（0.9.0／T-343）：loops 影響未來演化（0.8.0 起滿圈退役），
+       檢查點身分必須涵蓋——僅差 loops 的兩個世界摘要必須相異
+       （DIGEST_EVENT_STATE_COVERAGE 同族契約；0.8.0 破洞：loops 0 vs 7 digest 相等，
+       摘要相等不再保證後續一致）。修復契約：digest 實體序列納入 e.loops。 */
+{
+  const c = freshEnv();
+  const r = run(c, `(()=>{${SETUP}
+    const a = CSL.createWorld({ seed: 424242 });
+    const b = CSL.createWorld({ seed: 424242 });
+    runTicks(a, 100); runTicks(b, 100);
+    const id = Object.keys(b.entities).sort((x, y) => Number(x) - Number(y))[3];
+    const ea = a.entities[id], eb = b.entities[id];
+    b.entities[id].loops = ea.loops + 1;   // 唯一差異
+    const onlyLoopsDiff = ea.id === eb.id && ea.edge === eb.edge && ea.s === eb.s
+      && ea.load === eb.load && ea.cap === eb.cap && ea.loops !== eb.loops;
+    const dA = CSL.digest(a), dB = CSL.digest(b);
+    return { onlyLoopsDiff, dA, dB, differs: dA !== dB };
+  })()`);
+  check('digest-covers-loops', r.onlyLoopsDiff && r.differs, JSON.stringify(r));
+}
+
+console.log('=== model behaviour contracts (0.3.0 / 0.4.0 / 0.5.0 / 0.5.1 / 0.6.0 / 0.8.0 / 0.9.0) ===');
 let fails = 0;
 for (const r of results) {
   console.log((r.pass ? 'PASS' : 'FAIL') + '  ' + r.name + '   ' + r.detail);
