@@ -15,7 +15,12 @@
      （MODEL_RULE_IDENTITY 契約）。
      0.2.2：digest 納入 eventSeq（DIGEST_SCOPE 修復）＋事件 kind 相依 payload
      深驗證。舊包之 digestChainTail 以舊正規化計算，無法跨版延續，故顯式拒絕。 */
-  CSL.MODEL_VERSION = '0.9.0';   /* 0.9.0：檢查點身分契約修補（T-343）——digest 實體序列納入
+  CSL.MODEL_VERSION = '0.10.0';  /* 0.10.0：生理縱深第一軸——海拔／吸入氧（T-347）。新增參數
+     altitudeM（0–6000 m，預設 0）：氣壓比值 o2Press=(1−2.25577e-5·h)^5.25588（海平面=1）
+     乘外部輸入項與肺端裝載驅動；CO₂ 排出項乘高地過度換氣因子 (1+0.6·(1−o2Press))
+     ——模型指數近似，非個體生理。params 入 digest ⇒ 新參數即身分契約變更，升版後
+     0.9.0 舊包匯入顯式拒絕。
+     0.9.0：檢查點身分契約修補（T-343）——digest 實體序列納入
      e.loops：0.8.0 起 loops 影響未來演化（滿圈退役時機），未納入即「摘要相等」
      不再保證後續一致（實證：loops 0 vs 7 digest 相等）。digest 正規化變更屬
      MODEL_RULE_IDENTITY 身分契約，舊版執行包無法跨版延續，匯入顯式拒絕。
@@ -72,7 +77,7 @@
       branchOf: opts.branchOf || null,
       tick: 0,
       rng: new Rng(seed).getState(),          // 模型 RNG 狀態（唯一；視覺 RNG 在渲染層）
-      params: { lungSupply: 0.85, flowSpeed: 1.0, tissueDemand: 0.5, anemia: 0, temperature: 37.0, perfusion: 1.0 },
+      params: { lungSupply: 0.85, flowSpeed: 1.0, tissueDemand: 0.5, anemia: 0, temperature: 37.0, perfusion: 1.0, altitudeM: 0 },
       entities: {},                            // id → {id, kind:'rbc', edge, s, load, cap, loops}
       compartments: {
         alveolar: { stock: 6.0, capacity: 40 }, // 肺泡側氧庫存（模型單位）
@@ -157,7 +162,7 @@
     const cmd = entry.cmd;
     if (cmd.kind === 'setParam') {
       const key = cmd.key;
-      const limits = { lungSupply: [0, 1], tissueDemand: [0, 1], flowSpeed: [0.2, 3], anemia: [0, 0.9], temperature: [36, 41], perfusion: [0.2, 1.8] };
+      const limits = { lungSupply: [0, 1], tissueDemand: [0, 1], flowSpeed: [0.2, 3], anemia: [0, 0.9], temperature: [36, 41], perfusion: [0.2, 1.8], altitudeM: [0, 6000] };
       if (!(key in limits)) return;
       const v = Math.min(limits[key][1], Math.max(limits[key][0], Number(cmd.value)));
       const before = w.params[key];
@@ -210,9 +215,11 @@
         for (const d of due) applyCommand(w, d);
       }
     }
-    /* 2) 外部輸入（肺端供氧條件 → 肺泡庫存；超出容量 = 外部輸出/呼出） */
+    /* 2) 外部輸入（肺端供氧條件 → 肺泡庫存；超出容量 = 外部輸出/呼出）
+       海拔（0.10.0）：氣壓比值 o2Press 乘輸入驅動——吸入氧隨氣壓下降（模型近似）。 */
+    const o2Press = Math.pow(1 - 2.25577e-5 * w.params.altitudeM, 5.25588);
     const alv = w.compartments.alveolar;
-    const input = w.params.lungSupply * 0.08;
+    const input = w.params.lungSupply * 0.08 * o2Press;
     alv.stock += input;
     w.ledger.input += input;
     if (alv.stock > alv.capacity) {
@@ -249,7 +256,7 @@
         const eCap = (1 - w.params.anemia) * e.cap;
         const avail = eCap - e.load;
         let flux = Math.min(
-          CSL.K_LUNG * Math.max(0, level - e.load) * w.params.lungSupply,
+          CSL.K_LUNG * Math.max(0, level - e.load) * w.params.lungSupply * o2Press,
           alv.stock, Math.max(0, avail)
         );
         alv.stock -= flux; e.load += flux;
@@ -310,7 +317,9 @@
        未建模其返回）。 */
     {
       const inUnits = usage * 0.8 * 4;
-      const outUnits = w.co2.blood * 0.34 * w.params.lungSupply;
+      /* 高地過度換氣（0.10.0）：通氣隨海拔上升 ⇒ CO₂ 排出加速（模型指數；鉗位 ≤1.6 倍）。 */
+      const vent = 1 + 0.6 * (1 - o2Press);
+      const outUnits = w.co2.blood * 0.34 * w.params.lungSupply * vent;
       w.co2.blood += inUnits - outUnits;
       w.co2.produced += inUnits;
       w.co2.expelled += outUnits;
@@ -383,7 +392,7 @@
       digestChainTail: w.digestChain.slice(-64),
     }));
   };
-  const PARAM_LIMITS = { lungSupply: [0, 1], tissueDemand: [0, 1], flowSpeed: [0.2, 3], anemia: [0, 0.9], temperature: [36, 41], perfusion: [0.2, 1.8] };
+  const PARAM_LIMITS = { lungSupply: [0, 1], tissueDemand: [0, 1], flowSpeed: [0.2, 3], anemia: [0, 0.9], temperature: [36, 41], perfusion: [0.2, 1.8], altitudeM: [0, 6000] };
   CSL.PARAM_LIMITS = PARAM_LIMITS;
   const isFinNum = (v) => typeof v === 'number' && isFinite(v);
 

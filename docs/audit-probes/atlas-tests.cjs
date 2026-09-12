@@ -663,7 +663,7 @@ const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^
     };
   })()`);
   check('f3-rbc-turnover-retire-replace',
-    r.version === '0.9.0' && r.maxL >= 1 && r.nAfter === r.nBefore
+    r.version === '0.10.0' && r.maxL >= 1 && r.nAfter === r.nBefore
       && r.replaced && r.nRetire >= 1 && Math.abs(r.expelledDelta - 0.5) < 1e-9
       && r.conservedCount, JSON.stringify(r));
 }
