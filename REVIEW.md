@@ -1,5 +1,6 @@
 > 歷史審查／交付說明。當前私人封存範圍請見 [FINAL-REVIEW](docs/FINAL-REVIEW.md)；
 > 封存後的模型 0.3.0–0.5.0 與其 CI 收據見 [ci-receipts-model-0.3.0-0.5.0](docs/verification/ci-receipts-model-0.3.0-0.5.0.md)。
+> 現行進場是 Living Atlas（`loop.html`／根目錄）。下文的 `index.html` 八景現在是 [museum.html](museum.html)。
 
 # CELLSCAPE 審查包 · Review Guide
 

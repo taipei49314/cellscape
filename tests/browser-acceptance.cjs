@@ -95,12 +95,20 @@ const check = (name, pass, detail) => {
   await page.waitForTimeout(600);
   check('export-path-fires', (await page.evaluate(() => window.__exp)) >= 1);
 
-  /* ---------- index.html ---------- */
+  /* ---------- index.html（根入口須進 Living Atlas，不是舊八景） ---------- */
   await page.goto(BASE + '/index.html');
+  await page.waitForSelector('#followBtn', { timeout: 10000 });
+  const rootFollow = ((await page.locator('#followBtn').innerText()) || '');
+  check('index-enters-atlas', /跟著一顆紅血球|Follow a red blood cell/.test(rootFollow), rootFollow);
+  check('index-no-errors', pageErrors.length === 0, pageErrors.join(' | '));
+
+  /* ---------- museum.html（舊八景仍在，且不是 Atlas 登陸卡） ---------- */
+  await page.goto(BASE + '/museum.html');
   await page.waitForLoadState('domcontentloaded');
   await page.waitForTimeout(2500);
-  check('index-loads', /CELLSCAPE/i.test(await page.title()));
-  check('index-no-errors', pageErrors.length === 0, pageErrors.join(' | '));
+  check('museum-loads', /CELLSCAPE/i.test(await page.title()), await page.title());
+  check('museum-is-legacy-scenes', (await page.locator('#scene').count()) === 1
+    && (await page.locator('#followBtn').count()) === 0);
 
   // close-time 競態：Playwright 內部 navigation reject 不影響已完成的判定
   process.on('unhandledRejection', (e) => console.error('non-fatal unhandledRejection at close:', String(e)));

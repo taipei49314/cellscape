@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CELLSCAPE · Living Human Atlas</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<canvas id="scene"></canvas>
+
+<div id="hud">
+
+  <header id="topbar">
+    <div class="brand">
+      <span class="sig"></span>
+      CELLSCAPE
+      <em>LIVING&nbsp;HUMAN&nbsp;ATLAS</em>
+    </div>
+    <a class="v02link" href="loop.html" title="持續世界：跟隨一顆紅血球">Living Atlas ↗</a>
+    <nav id="breadcrumb" aria-label="導覽"></nav>
+    <div id="timebox">
+      <div id="inflammation" title="發炎指數">
+        <i>發炎指數</i><b><span id="inflBar"></span></b>
+      </div>
+      <button class="btn icon" id="btnPause" title="暫停 / 繼續（空白鍵）">❚❚</button>
+      <button class="btn spd" data-spd="0.5">0.5×</button>
+      <button class="btn spd on" data-spd="1">1×</button>
+      <button class="btn spd" data-spd="2">2×</button>
+      <button class="btn spd" data-spd="4">4×</button>
+      <span id="clock" class="mono">00:00</span>
+    </div>
+  </header>
+
+  <aside id="rail" class="panel"></aside>
+
+  <aside id="inspector" class="panel hidden">
+    <div id="insHead">
+      <span id="insSwatch"></span>
+      <div>
+        <div id="insName">—</div>
+        <div id="insEn" class="mono">—</div>
+      </div>
+      <button id="insClose" title="關閉">×</button>
+    </div>
+    <div class="kv"><i>角色</i><b id="insRole">—</b></div>
+    <div class="kv"><i>狀態</i><b id="insState">—</b></div>
+    <div class="kv"><i>任務</i><b id="insTask">—</b></div>
+    <div class="kv"><i>訊號</i><b id="insSignals">—</b></div>
+    <div id="insDesc">—</div>
+    <button class="btn" id="btnFollow">◎ 追蹤鏡頭</button>
+  </aside>
+
+  <div id="bottombar">
+    <div id="hint" class="mono"></div>
+    <div id="ticker"><span id="tickerText"></span></div>
+    <div id="controls">
+      <div id="phaseRow">
+        <span class="lbl">情境</span>
+        <span id="phaseBadge">—</span>
+      </div>
+      <div id="chips"></div>
+      <div id="events">
+        <button class="btn tiny" data-ev="pathogen">＋病原體</button>
+        <button class="btn tiny" data-ev="wound">＋傷口</button>
+        <button class="btn tiny" data-ev="mutate">＋突變</button>
+        <button class="btn tiny" data-ev="purge">⟲ 淨化</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="vignette"></div>
+  <div id="scanlines"></div>
+</div>
+
+<div id="loading">
+  <div class="ring"></div>
+  <div class="t1">CELLSCAPE</div>
+  <div class="t2 mono">正在初始化人體微觀模擬……</div>
+</div>
+
+<script src="js/data.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/render.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
