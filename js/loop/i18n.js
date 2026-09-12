@@ -120,5 +120,14 @@
     });
   }
 
-  CSL.I18n = { get, set, toggle, card, claimText, readout, cap, shell, now, tour, isEn, applyShell, LOCALES };
+  /* 血紅素放大視角字串（T-321 刀 K1）：EN 缺鍵回 null，呼叫端退回繁中 */
+  function hemo(key, vars) {
+    const E = en() && en().hemo;
+    if (!(get() === 'en' && E && E[key])) return null;
+    let s = E[key];
+    if (vars) for (const k of Object.keys(vars)) s = s.split('{' + k + '}').join(String(vars[k]));
+    return s;
+  }
+
+  CSL.I18n = { get, set, toggle, card, claimText, readout, cap, shell, now, tour, hemo, isEn, applyShell, LOCALES };
 })(typeof window !== 'undefined' ? window : globalThis);

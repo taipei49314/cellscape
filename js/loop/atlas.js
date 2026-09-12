@@ -193,6 +193,7 @@
           <p class="headline">${esc(V.headline)}</p>
           <ul class="kps">${V.keyPoints.map((k) => `<li>${esc(k)}</li>`).join('')}</ul>
           <button id="insideBtn" class="btn2 tiny" data-card="${esc(card.id)}">${esc(L('inside.entry', '🔬 細胞內部（示意）'))}</button>
+          ${card.id === 'rbc' ? `<button id="hemoBtn" class="btn2 tiny">${esc(L('hemo.entry', '🔎 血紅素放大（模型欄位）'))}</button>` : ''}
           ${V.capabilityNote ? `<div class="note">${esc(V.capabilityNote)}</div>` : ''}
           ${live}
         </div>
