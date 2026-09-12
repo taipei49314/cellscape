@@ -1,10 +1,10 @@
 {
   "kind": "cellscape-frozen-core-baseline",
-  "note": "T-325 基線；T-329 F1 tour、F2 雙床、F3 RBC 輪替解凍後更新。engine/data 仍為 T-325 釘定。unchanged-core.json 不改寫。",
+  "note": "T-325 基線；T-329 F1 tour、F2 雙床、F3 RBC 輪替解凍後更新。T-343 digest 契約修補（MODEL 0.9.0）更新 core.js。engine/data 仍為 T-325 釘定。unchanged-core.json 不改寫。",
   "pinned_at_main": "31506887cef3c913cb434b8733d8d522a4df0f36",
   "pinned_at_utc": "2026-09-12T05:10:00Z",
   "files": {
-    "js/loop/core.js": "8c5ed33adf84011e0094190bebcb632ab7195fe041b659b7b6ac880b2a434eae",
+    "js/loop/core.js": "ec2c2021adc652586bde0ceec571e0ef9211bdd0ac23fc84111ced5a67221970",
     "js/loop/model.js": "d779fba758eb658eb7ddd60ef950e4dafbc3ed5282f35459ede8b85b15cb68b5",
     "js/loop/render.js": "a2f82ba92a3c6489d163bbd1b539dc2594969ae7ae3eed3f1398fba318576fdf",
     "js/loop/tour.js": "06e0ccca55d894c2036e978776b977f42fa35f148b416eaab667be327aa3f7ef",
