@@ -643,7 +643,9 @@ const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^
     const id = '1';
     w.entities[id].loops = maxL;
     w.entities[id].load = 0.5;
-    w.entities[id].edge = 5; /* 任意非肺邊 */
+    /* 放在無交換邊（左心），避免同 tick 卸載改變殘餘量 */
+    w.entities[id].edge = CSL.EDGES.findIndex((x) => x.id === 'HEART_L');
+    w.entities[id].s = 0.5;
     const nBefore = Object.keys(w.entities).length;
     const expelledBefore = w.ledger.expelled;
     CSL.step(w);
