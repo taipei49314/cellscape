@@ -310,6 +310,98 @@ const run = (s) => vm.runInContext(s, c, { timeout: 60000 });
     JSON.stringify(r));
 }
 
+/* 13–16. 血紅素放大視角（T-321 刀 K1）。模組層是純資料＋純函式，可載進 VM；
+   這四項擺在 content-en.js 載入（第 9 項）之後，EN 鍵檢查才拿得到 CSL.ContentEN。 */
+{
+  const hemoSrc = load('hemo.js');
+  vm.runInContext(hemoSrc, c, { filename: 'hemo.js' });
+
+  /* 13. 每一層內容非 claim 即 illustrative；claim 的 claimIds 必須全部可解析，
+         illustrative 不得夾帶數量或單位（避免變成沒有依據的事實斷言）。 */
+  {
+    const r = run(`(()=>{
+      const L = CSL.Hemo.LAYERS;
+      const bad = [];
+      for (const ly of L) {
+        if (ly.kind === 'claim') {
+          if (!ly.claimIds || !ly.claimIds.length) { bad.push([ly.id, 'claim-without-ids']); continue; }
+          for (const cid of ly.claimIds) if (!CSL.Content.claims[cid]) bad.push([ly.id, 'unresolved:' + cid]);
+        } else if (ly.kind === 'illustrative') {
+          if (/[0-9０-９]/.test(ly.zh)) bad.push([ly.id, 'illustrative-with-number']);
+        } else bad.push([ly.id, 'unknown-kind:' + ly.kind]);
+      }
+      return { n: L.length, bad };
+    })()`);
+    check('hemo-layers-claim-or-illustrative', r.n > 0 && r.bad.length === 0, JSON.stringify(r));
+  }
+
+  /* 14. 禁用詞彙探針：只掃**模組自撰**字串（LAYERS 的 zh 與 hemo.js 原始碼），
+         引用自 CSL.Content 的正本文字（主張 text／supportedLimit／readout note）
+         不在此限——那些是已登錄的措辭，本探針要抓的是模組順手多講的生理學。 */
+  {
+    const BANNED = /(SpO|飽和度|saturation|解離曲線|dissociation|P50|四聚體|tetramer|結合位|binding site|協同|cooperativ|2,3-DPG|血比容|h(a)?ematocrit|mmHg|血氧分壓|臨床|clinical|診斷|正常值)/i;
+    const r = run(`(()=>{
+      const hits = [];
+      for (const ly of CSL.Hemo.LAYERS) if (${BANNED.toString()}.test(ly.zh)) hits.push(['layer:' + ly.id, ly.zh]);
+      const en = (CSL.ContentEN && CSL.ContentEN.hemo) || {};
+      for (const k of Object.keys(en)) if (${BANNED.toString()}.test(String(en[k]))) hits.push(['en:' + k, en[k]]);
+      return { hits };
+    })()`);
+    /* 原始碼層：扣掉本檔自己的詞表與註解行後再掃，避免自我命中 */
+    const srcLines = hemoSrc.split('\n').filter((ln) => !/^\s*(\/\*|\*|\/\/)/.test(ln));
+    const srcHits = srcLines.filter((ln) => BANNED.test(ln)).map((ln) => ln.trim().slice(0, 60));
+    check('hemo-no-unregistered-vocabulary', r.hits.length === 0 && srcHits.length === 0,
+      JSON.stringify({ data: r.hits, src: srcHits }));
+  }
+
+  /* 15. viewModel 是唯讀且與既有讀值一致：負載比例必須等於 readout('sel_load')，
+         沒有選取實體時明示缺資料（不以 0 頂替），且呼叫後世界逐位元不變。 */
+  {
+    const r = run(`(()=>{
+      CSL.Observe.init();
+      const w = CSL.createWorld({ seed: 8899 });
+      for (let i = 0; i < 200; i++) { CSL.step(w); CSL.Observe.recordTick(w, 'B', 7); }
+      const before = CSL.exportRun(w), digestBefore = CSL.digest(w);
+      const vm = CSL.Hemo.viewModel(w, 'B', 7);
+      const ro = CSL.Observe.readout(w, 'B', 7, 'sel_load');
+      const none = CSL.Hemo.viewModel(w, 'B', null);
+      const html = CSL.Hemo.render(vm);
+      const noneHtml = CSL.Hemo.render(none);
+      return {
+        available: vm.available,
+        ratioMatchesReadout: Math.abs(vm.ratio - ro.value) <= 1e-12,
+        ceiling: vm.ceiling, anemia: vm.anemia,
+        noneAvailable: none.available, noneReason: none.reason, noneRatio: none.ratio,
+        readOnly: CSL.exportRun(w) === before && CSL.digest(w) === digestBefore,
+        htmlHasClaimRow: html.indexOf('C-model-load') >= 0 || html.length > 0,
+        noneHtmlSaysMissing: /缺資料|Missing data/.test(noneHtml),
+      };
+    })()`);
+    check('hemo-viewmodel-matches-readout-and-readonly',
+      r.available && r.ratioMatchesReadout && r.readOnly
+        && r.noneAvailable === false && r.noneReason === 'no-entity' && r.noneRatio === null
+        && r.noneHtmlSaysMissing, JSON.stringify(r));
+  }
+
+  /* 16. EN 覆蓋層：每個 LAYERS 的 layer.<id> 與模組用到的鍵都要有 EN，
+         且不得有多餘鍵（比照主張鍵的零缺零多規則）。 */
+  {
+    const r = run(`(()=>{
+      const need = CSL.Hemo.LAYERS.map((ly) => 'layer.' + ly.id).concat([
+        'title','frameNote','illustrativeTag','missingEntity','missingWorld',
+        'rowLoad','rowCeiling','rowWhere','exchangeHere','rowLoops','rowCo2','rowPerfusion',
+        'trendOk','trendMissing','stamp']).sort();
+      const have = Object.keys((CSL.ContentEN && CSL.ContentEN.hemo) || {}).sort();
+      return { missing: need.filter((k) => have.indexOf(k) < 0),
+               extra: have.filter((k) => need.indexOf(k) < 0),
+               nNeed: need.length, nHave: have.length,
+               entryKey: !!(CSL.ContentEN && CSL.ContentEN.shell && CSL.ContentEN.shell['hemo.entry']) };
+    })()`);
+    check('hemo-en-keys-complete', r.missing.length === 0 && r.extra.length === 0 && r.entryKey,
+      JSON.stringify(r));
+  }
+}
+
 let fails = 0;
 console.log('=== v0.3 Atlas self-built tests ===');
 for (const r of results) { console.log((r.pass ? 'PASS' : 'FAIL') + '  ' + r.name + (r.pass ? '' : '   ' + r.detail)); if (!r.pass) fails++; }

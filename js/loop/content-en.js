@@ -20,6 +20,7 @@
     shell: {
       'tab.know': 'Know it', 'tab.now': 'Right now', 'tab.mech': 'How it works', 'tab.src': 'Sources',
       'nav.follow': '◎ Follow a red blood cell',
+      'hemo.entry': '🔎 Hemoglobin zoom (model field)',
       'params.perfusion': 'Tissue perfusion',
       'view.explore': 'Free exploration', 'view.overview': 'Circulation overview',
       'view.lung': 'Lung micro-view', 'view.tissue': 'Tissue exchange',
@@ -141,6 +142,33 @@
       'C-model-temp':     'Body temperature multiplies the O₂ usage rate by a Q10 factor (2^((T−37)/10)); CO₂ production follows usage.',
       'C-model-perfusion':'The perfusion parameter represents the share of blood flow reaching this tissue bed and only multiplies the tissue-side unloading flux; this model has a single tissue bed and does not model any other vascular bed.',
       'C-model-anemia':   'The anemia parameter only gates the lung-side loading ceiling ((1 − anemia) × capacity); it does not retroactively change oxygen already carried, and the conservation ledger is unchanged.'
+    },
+
+    /* 血紅素放大視角（hemo.js；缺鍵退回繁中） */
+    hemo: {
+      title: 'Hemoglobin zoom (model field)',
+      frameNote: 'What is magnified here is the model field, not a micrograph; the fill is continuous and its scale does not correspond to a number of molecules.',
+      illustrativeTag: 'Illustrative - educational simplification, not a molecular simulation',
+      missingEntity: 'Missing data: no red blood cell is selected - press "Follow a red blood cell" or click one first.',
+      missingWorld: 'Missing data: no readable world state right now.',
+      rowLoad: 'Load ratio (load / cap)',
+      rowCeiling: 'Lung-side loading ceiling (1 - anemia)',
+      rowWhere: 'Currently in',
+      exchangeHere: 'exchange interface segment',
+      rowLoops: 'Loops completed',
+      rowCo2: 'Blood CO₂ index (shared by the whole world)',
+      rowPerfusion: 'Tissue perfusion (shared by the whole world)',
+      trendOk: 'The thin bars below are this cell’s load samples (recent observation)',
+      trendMissing: 'Missing data: this cell has no observation samples yet (never padded with zeros or a flat line)',
+      stamp: 'Timestamp',
+      'layer.frame': 'Below is this red blood cell’s state in the model, magnified; the drawing is illustrative, not a micrograph and not a molecular simulation.',
+      'layer.carrier': 'Oxygen is carried by hemoglobin: loaded in the lung, released in the tissues.',
+      'layer.shape': 'A mature red blood cell is a biconcave disc with no nucleus.',
+      'layer.field': 'The model approximates the carrying state with a single 0-1 load field - the fill bar below is that field, and its scale does not represent a count of molecules.',
+      'layer.sample': 'This cell is one of the fixed representative sample, not a whole-body total.',
+      'layer.interface': 'Loading and unloading are handled by aggregate interface rules; there are no individual epithelial or endothelial cell entities.',
+      'layer.ceiling': 'The anemia parameter only lowers the lung-side loading ceiling; it does not retroactively change oxygen already carried.',
+      'layer.unload': 'Unloading speed depends on both the blood CO₂ index and tissue perfusion; both are world-wide quantities, not private fields of this one cell.',
     },
 
     /* 導覽字幕的英文對照（tour.js；缺鍵時退回繁中原句） */

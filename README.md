@@ -1,4 +1,4 @@
-# Cellscape · Living Atlas（產品 0.3.2＋後續功能 · 模型 0.5.0）
+# Cellscape · Living Atlas（產品 0.3.2＋後續功能 · 模型 0.6.0）
 
 **私有倉（已推送）· Gate A/B 資訊層已收尾，其後另加三個模型維度 · 最後更新 2026-09-11（UTC）**
 
@@ -37,7 +37,7 @@ npm test
 # 等同 node scripts/test.cjs
 ```
 
-此命令執行隨包的 Atlas 12 項、Loop 7 項、模型行為契約 11 項與最終觀察邊界 4 項（共 34 項）；**不是完整瀏覽器或生物學驗證**。模型行為契約涵蓋貧血上限、Q10、CO₂ 鉗位與帳目、參數界限與凍結五檔雜湊。
+此命令執行隨包的 Atlas 16 項、Loop 7 項、模型行為契約 11 項與最終觀察邊界 4 項（共 38 項）；**不是完整瀏覽器或生物學驗證**。模型行為契約涵蓋貧血上限、Q10、CO₂ 鉗位與帳目、參數界限，以及凍結檔雜湊守門——**目前只實守 model.js／render.js／engine.js／data.js 四檔**，`core.js`／`content.js`／`tour.js` 因具名解凍已列豁免，所以 CI 綠不等於沒碰凍結檔。
 兩道 pool CI（`npm test`、`browser acceptance`）在每個 PR 與 main 推送上執行。封存輪的 evidence ZIP 不在本倉內；審查範圍見 `docs/FINAL-REVIEW.md`，模型 0.3.0–0.5.0 的 CI 收據見 `docs/verification/`。
 
 ## 版本與資料界線
