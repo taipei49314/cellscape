@@ -13,6 +13,11 @@ const results = [];
 const check = (name, pass, detail) => { results.push({ name, pass, detail: detail || '' }); };
 const run = (s) => vm.runInContext(s, c, { timeout: 60000 });
 
+/* 共用：把 JS 原始碼的註解剝掉再掃。第一版只濾「行首是註解記號」的行，對
+   「/* 開頭、續行沒有 * 前綴」的區塊註解無效——pool run 實際誤判過一次：
+   chapters.js 檔頭寫著「不呼叫 Observe.onWorldInstalled()」被當成真的呼叫。 */
+const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*/g, '$1 ');
+
 /* 1. 內容完整性：8 卡 × 4 問 = 32；主張/來源可解析；能力列舉合法；純資料 */
 {
   const r = run(`(()=>{
@@ -349,8 +354,8 @@ const run = (s) => vm.runInContext(s, c, { timeout: 60000 });
       return { hits };
     })()`);
     /* 原始碼層：扣掉本檔自己的詞表與註解行後再掃，避免自我命中 */
-    const srcLines = hemoSrc.split('\n').filter((ln) => !/^\s*(\/\*|\*|\/\/)/.test(ln));
-    const srcHits = srcLines.filter((ln) => BANNED.test(ln)).map((ln) => ln.trim().slice(0, 60));
+    /* 原始碼層：剝掉註解後再掃，避免把「說明自己不講什麼」的註解當成違規 */
+    const srcHits = (stripComments(hemoSrc).match(BANNED) || []).slice(0, 3);
     check('hemo-no-unregistered-vocabulary', r.hits.length === 0 && srcHits.length === 0,
       JSON.stringify({ data: r.hits, src: srcHits }));
   }
@@ -467,8 +472,7 @@ const run = (s) => vm.runInContext(s, c, { timeout: 60000 });
                cComplete: evC.complete, htmlLen: html.length,
                saysNoJudgement: /不判定|does not judge/.test(html) };
     })()`);
-    const writesModel = /queueCommand|setParam|onWorldInstalled/.test(
-      srcChapters.split('\n').filter((ln) => !/^\s*(\/\*|\*|\/\/)/.test(ln)).join('\n'));
+    const writesModel = /queueCommand|setParam|onWorldInstalled/.test(stripComments(srcChapters));
     check('chapters-never-write-model',
       r.readOnly && r.cComplete && r.saysNoJudgement && writesModel === false,
       JSON.stringify({ ...r, writesModel }));
