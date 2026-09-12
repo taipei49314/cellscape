@@ -428,7 +428,63 @@ const SETUP = `
     r.hydV > r.dryV && r.hydU > r.dryU && r.residual <= 1e-6, JSON.stringify(r));
 }
 
-console.log('=== model behaviour contracts (0.3.0 / 0.4.0 / 0.5.0 / 0.5.1 / 0.6.0 / 0.8.0 / 0.9.0 / 0.10.0 / 1.0.0) ===');
+/* 19. 感染中立性（1.1.0／T-353）：infection=0 與未設定的世界逐拍摘要全等，
+       且無 WBC 生成（未修 core 無 immunity，探針錯誤落地＝fail-first 之一）。 */
+{
+  const c = freshEnv();
+  const r = run(c, `(()=>{${SETUP}
+    const a = CSL.createWorld({ seed: 1404 });
+    applyParams(a, { infection: 0 });
+    const b = CSL.createWorld({ seed: 1404 });
+    runTicks(b, 5);
+    for (let i = 0; i < 400; i++) { CSL.step(a); CSL.digestStep(a); CSL.step(b); CSL.digestStep(b); }
+    const same = a.digestChain.length === b.digestChain.length
+      && a.digestChain.every((v, i) => v === b.digestChain[i]);
+    const allRbc = Object.values(a.entities).every((e) => e.kind === 'rbc');
+    return { same, allRbc };
+  })()`);
+  check('infection-neutral-at-0', r.same === true && r.allRbc === true, JSON.stringify(r));
+}
+
+/* 20. 感染招募與清除（infection=1）：招募 ≤8 顆、外滲恰 8 筆、remaining 歸零、
+       cleared 事件 1 筆、結束時場上全為 RBC、氧守恆不變
+       （未修 core 無 immunity ⇒ 斷言失敗）。 */
+{
+  const c = freshEnv();
+  const r = run(c, `(()=>{${SETUP}
+    const w = CSL.createWorld({ seed: 1501 });
+    if (!w.immunity) return { noImmunity: true };
+    applyParams(w, { infection: 1 });
+    runTicks(w, 1300);   // 清除完成 ~1162 tick；全程事件 <1000 留環內可數
+    const cnt = (ruleId) => w.events.filter((e) => e.ruleId === ruleId).length;
+    const allRbc = Object.values(w.entities).every((e) => e.kind === 'rbc');
+    return { recruits: cnt('wbc_recruit'), extravasations: cnt('wbc_extravasate'),
+             cleared: cnt('infection_cleared'), remaining: w.immunity.remaining,
+             allRbc, wbcMaxOk: true, o2Residual: Math.abs(CSL.ledgerResidual(w)) };
+  })()`);
+  check('infection-recruits-and-clears',
+    r.recruits <= 8 && r.extravasations === 8 && r.cleared === 1 && r.remaining === 0
+      && r.allRbc === true && r.o2Residual <= 1e-6, JSON.stringify(r));
+}
+
+/* 21. 感染量等比招募：infection=0.5 清除需 4 次外滲（0.125／顆），
+       cleared 1 筆；與 20 的 8 次成等比。 */
+{
+  const c = freshEnv();
+  const r = run(c, `(()=>{${SETUP}
+    const w = CSL.createWorld({ seed: 1602 });
+    if (!w.immunity) return { noImmunity: true };
+    applyParams(w, { infection: 0.5 });
+    runTicks(w, 1300);   // 0.5 事件需 4 次外滲，清除較早完成
+    const cnt = (ruleId) => w.events.filter((e) => e.ruleId === ruleId).length;
+    return { extravasations: cnt('wbc_extravasate'), cleared: cnt('infection_cleared'),
+             remaining: w.immunity.remaining };
+  })()`);
+  check('infection-scales-recruitment',
+    r.extravasations === 4 && r.cleared === 1 && r.remaining === 0, JSON.stringify(r));
+}
+
+console.log('=== model behaviour contracts (0.3.0 / 0.4.0 / 0.5.0 / 0.5.1 / 0.6.0 / 0.8.0 / 0.9.0 / 0.10.0 / 1.0.0 / 1.1.0) ===');
 let fails = 0;
 for (const r of results) {
   console.log((r.pass ? 'PASS' : 'FAIL') + '  ' + r.name + '   ' + r.detail);

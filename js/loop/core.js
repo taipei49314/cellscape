@@ -15,7 +15,13 @@
      （MODEL_RULE_IDENTITY 契約）。
      0.2.2：digest 納入 eventSeq（DIGEST_SCOPE 修復）＋事件 kind 相依 payload
      深驗證。舊包之 digestChainTail 以舊正規化計算，無法跨版延續，故顯式拒絕。 */
-  CSL.MODEL_VERSION = '1.0.0';   /* 1.0.0：生理縱深第二軸——血量／脫水（T-350）。新 compartment
+  CSL.MODEL_VERSION = '1.1.0';   /* 1.1.0：生理縱深第三軸——免疫招募（T-353）。新參數 infection（0–1）
+     釘組織感染於 TISSUE_CAP；新實體 kind 'wbc'（嗜中性球，WBC_MAX=8）自 VEIN_SYS 每 90 tick
+     招募、沿 EDGES 移動、抵 TISSUE_CAP 即外滲（實體移除、infection remaining −0.125、歸零發
+     infection_cleared）；免疫狀態 immunity（remaining/active/epTotal/epDone/spawnCd）入 digest。
+     WBC 負載恆 0（不進氧帳）、不適用 RBC 世代輪替；RBC=48 契約改述為「RBC 恰 48＋WBC ≤8」。
+     實體 kind／digest 結構＝身分契約變更，1.0.0 舊包匯入顯式拒絕。
+     1.0.0：生理縱深第二軸——血量／脫水（T-350）。新 compartment
      volume（0–5.0，初始等容 5.0）：補水參數 fluidRate（0–0.02／tick）流入、溫度衍生出汗
      0.0002×max(0, temperature−37) 流出；容積比 volFrac 乘移動流速與組織端卸載通量（等容 1.0＝
      行為中立）；volumeLow 閾值事件（volFrac <0.70 觸發、≥0.80 解除遲滯）；容積獨立小帳
@@ -71,6 +77,7 @@
 
   /* ---------- 世界建立 ---------- */
   CSL.ENTITY_COUNT = 48;           // 固定模型實體數（抽樣代表，非全身總量）
+  CSL.WBC_MAX = 8;                 // 嗜中性球同時在循環上限（1.1.0；C-model-wbc-8）
   CSL.createWorld = function (opts) {
     opts = opts || {};
     const seed = (opts.seed >>> 0) || 0xC5CA1E5;
@@ -83,7 +90,7 @@
       branchOf: opts.branchOf || null,
       tick: 0,
       rng: new Rng(seed).getState(),          // 模型 RNG 狀態（唯一；視覺 RNG 在渲染層）
-      params: { lungSupply: 0.85, flowSpeed: 1.0, tissueDemand: 0.5, anemia: 0, temperature: 37.0, perfusion: 1.0, altitudeM: 0, fluidRate: 0 },
+      params: { lungSupply: 0.85, flowSpeed: 1.0, tissueDemand: 0.5, anemia: 0, temperature: 37.0, perfusion: 1.0, altitudeM: 0, fluidRate: 0, infection: 0 },
       entities: {},                            // id → {id, kind:'rbc', edge, s, load, cap, loops}
       compartments: {
         alveolar: { stock: 6.0, capacity: 40 }, // 肺泡側氧庫存（模型單位）
@@ -91,6 +98,7 @@
         volume: { stock: 5.0, capacity: 5.0 },  // 血漿容積（1.0.0；載體小帳，不進氧守恆帳）
       },
       volumeLedger: { intake: 0, sweat: 0, lastCheckTick: -30, lastResidual: 0 },
+      immunity: { remaining: 0, active: false, epTotal: 0, epDone: 0, spawnCd: 0 },
       ledger: { initialTotal: 0, input: 0, usage: 0, expelled: 0, lastCheckTick: -1, lastResidual: 0 },
       /* CO₂ 指數（0–1；0.4.0）：血液 CO₂ 相對量的聚合指標（非分子帳）。
          基準點 0.30＝預設參數下的穩態；生產隨 O₂ 使用量，排出隨肺端通氣。 */
@@ -171,12 +179,21 @@
     const cmd = entry.cmd;
     if (cmd.kind === 'setParam') {
       const key = cmd.key;
-      const limits = { lungSupply: [0, 1], tissueDemand: [0, 1], flowSpeed: [0.2, 3], anemia: [0, 0.9], temperature: [36, 41], perfusion: [0.2, 1.8], altitudeM: [0, 6000], fluidRate: [0, 0.02] };
+      const limits = { lungSupply: [0, 1], tissueDemand: [0, 1], flowSpeed: [0.2, 3], anemia: [0, 0.9], temperature: [36, 41], perfusion: [0.2, 1.8], altitudeM: [0, 6000], fluidRate: [0, 0.02], infection: [0, 1] };
       if (!(key in limits)) return;
       const v = Math.min(limits[key][1], Math.max(limits[key][0], Number(cmd.value)));
       const before = w.params[key];
       if (before === v) return;
       w.params[key] = v;
+      /* 感染事件（1.1.0）：setParam infection 即（重）定義當前感染事件 */
+      if (key === 'infection') {
+        const im = w.immunity;
+        im.remaining = v;
+        im.active = v > 0;
+        im.epTotal = Math.ceil(v / 0.125);
+        im.epDone = 0;
+        im.spawnCd = 0;
+      }
       const ev = CSL.emitEvent(w, {
         kind: 'command', source: cmd.source, ruleId: 'setParam',
         before: { key, value: before }, after: { key, value: v },
@@ -201,6 +218,8 @@
       (w._tissueLow ? 1 : 0) + '|' + f6(w._lastTissueLevel == null ? -1 : w._lastTissueLevel) + '|' +
       (w._co2High ? 1 : 0) + '|' + f6(w._lastCo2 == null ? -1 : w._lastCo2) + '|' +
       (w._volumeLow ? 1 : 0) + '|' + f6(w._lastVolume == null ? -1 : w._lastVolume) + '|' +
+      f6(w.immunity.remaining) + '|' + (w.immunity.active ? 1 : 0) + '|' + w.immunity.epTotal + '|' +
+      w.immunity.epDone + '|' + w.immunity.spawnCd + '|' +
       f6(w.co2.blood) + '|' + f6(w.co2.produced) + '|' + f6(w.co2.expelled) + '|' + f6(w.co2.retained) + '|' +
       (w._lastParamEvent ? w._lastParamEvent.eventId : 0) + '|' +
       w.eventSeq + '|' +
@@ -238,6 +257,10 @@
       alv.stock = alv.capacity;
       w.ledger.expelled += expelled;
     }
+    /* 2.4) 免疫（1.1.0）：組織感染釘 TISSUE_CAP；WBC 自 VEIN_SYS 進入循環。 */
+    const tisIdx = CSL.EDGES.findIndex((e) => e.id === 'TISSUE_CAP');
+    const veinIdx = CSL.EDGES.findIndex((e) => e.id === 'VEIN_SYS');
+
     /* 2.5) 容積比（1.0.0）：等容 5.0/5.0＝1，行為中立（volume-neutral-at-default 契約）。 */
     const volFrac = w.compartments.volume.stock / w.compartments.volume.capacity;
 
@@ -246,6 +269,7 @@
        以**抵達後的邊**為準（稽核契約 HANDOFF_EXCHANGE_BOUNDARY）。 */
     const flow = w.params.flowSpeed;
     w._fluxLung = 0; w._fluxTissue = 0;
+    const removedWbc = [];
     for (const k in w.entities) {
       const e = w.entities[k];
       const startEdge = CSL.EDGES[e.edge];
@@ -263,7 +287,7 @@
       }
       /* 4) 交換——以「當前（移交後）邊」為準；係數為零 ⇒ 通量為零 */
       const curEdge = CSL.EDGES[e.edge];
-      if (curEdge.exchange === 'lung') {
+      if (e.kind === 'rbc' && curEdge.exchange === 'lung') {
         const level = alv.stock / alv.capacity;
         /* 貧血（T-303）：可用 Hb 上限 = 1 − anemia，只閘肺端裝載；
            不回溯調整既有負載（已攜帶者照常在組織卸載），守恆帳結構不變。 */
@@ -275,7 +299,7 @@
         );
         alv.stock -= flux; e.load += flux;
         w._fluxLung += flux;
-      } else if (curEdge.exchange === 'tissue') {
+      } else if (e.kind === 'rbc' && curEdge.exchange === 'tissue') {
         const tis = w.compartments.tissue;
         const level = tis.stock / tis.capacity;
         const demand = 0.5 + w.params.tissueDemand;
@@ -296,9 +320,25 @@
         e.load -= flux; tis.stock += flux;
         w._fluxTissue += flux;
       }
+      /* 3.4) WBC 外滲（1.1.0）：抵 TISSUE_CAP 即離開循環，推進感染清除。
+         每顆清除 0.125 感染嚴重度；歸零時發 infection_cleared。 */
+      if (e.kind === 'wbc' && e.edge === tisIdx) {
+        removedWbc.push(k);
+        CSL.emitEvent(w, { kind: 'system', ruleId: 'wbc_extravasate', actorId: e.id,
+          regionId: 'TISSUE_CAP', note: 'extravasate' });
+        const im = w.immunity;
+        const before = im.remaining;
+        im.epDone++;
+        im.remaining = Math.max(0, im.remaining - 0.125);
+        if (im.active && before > 0 && im.remaining === 0) {
+          CSL.emitEvent(w, { kind: 'system', ruleId: 'infection_cleared',
+            regionId: 'TISSUE_CAP', note: 'clear' });
+          im.active = false;
+        }
+      }
       /* 3.5) RBC 世代輪替（0.8.0／T-329 F3）：滿圈數退役，同槽在肺端替換。
          殘餘 load 記 ledger.expelled（離開抽樣體）——不憑空消失、不偽造使用。 */
-      if (e.loops >= CSL.RBC_MAX_LOOPS) {
+      if (e.kind === 'rbc' && e.loops >= CSL.RBC_MAX_LOOPS) {
         const residual = e.load;
         const lungIdx = CSL.EDGES.findIndex((ed) => ed.id === 'LUNG_CAP');
         CSL.emitEvent(w, {
@@ -315,6 +355,26 @@
         e.loops = 0;
       }
     }
+    for (const k of removedWbc) delete w.entities[k];
+
+    /* 4.5) 免疫招募（1.1.0）：感染事件存活期間自骨髓池每 90 tick 一顆進入循環（WBC_MAX=8；
+       招募上限＝本事件所需顆數）。冷卻計數入 digest。 */
+    {
+      const im = w.immunity;
+      if (im.active && im.remaining > 0) {
+        if (im.spawnCd > 0) im.spawnCd--;
+        let wbcCount = 0;
+        for (const k in w.entities) if (w.entities[k].kind === 'wbc') wbcCount++;
+        if (im.spawnCd <= 0 && wbcCount < CSL.WBC_MAX && (im.epDone + wbcCount) < im.epTotal) {
+          const id = w.idSeq++;
+          w.entities[id] = { id, kind: 'wbc', edge: veinIdx, s: 0, load: 0, cap: 1.0, loops: 0 };
+          CSL.emitEvent(w, { kind: 'system', ruleId: 'wbc_recruit', actorId: id,
+            regionId: 'VEIN_SYS', note: 'marrow-recruit' });
+          im.spawnCd = 90;
+        }
+      }
+    }
+
     /* 5) 組織使用（由庫存水位與需求參數決定；無庫存即無使用——不得偽造消耗） */
     const tis = w.compartments.tissue;
     const tLevel = tis.stock / tis.capacity;
@@ -430,6 +490,7 @@
       ledger: w.ledger, actions: w.actions,
       co2: w.co2,
       volumeLedger: w.volumeLedger,
+      immunity: w.immunity,
       events: w.events, eventSeq: w.eventSeq,
       pendingCommands: w.pendingCommands, idSeq: w.idSeq,
       tissueLow: !!w._tissueLow, lastTissueLevel: w._lastTissueLevel == null ? null : w._lastTissueLevel,
@@ -439,7 +500,7 @@
       digestChainTail: w.digestChain.slice(-64),
     }));
   };
-  const PARAM_LIMITS = { lungSupply: [0, 1], tissueDemand: [0, 1], flowSpeed: [0.2, 3], anemia: [0, 0.9], temperature: [36, 41], perfusion: [0.2, 1.8], altitudeM: [0, 6000], fluidRate: [0, 0.02] };
+  const PARAM_LIMITS = { lungSupply: [0, 1], tissueDemand: [0, 1], flowSpeed: [0.2, 3], anemia: [0, 0.9], temperature: [36, 41], perfusion: [0.2, 1.8], altitudeM: [0, 6000], fluidRate: [0, 0.02], infection: [0, 1] };
   CSL.PARAM_LIMITS = PARAM_LIMITS;
   const isFinNum = (v) => typeof v === 'number' && isFinite(v);
 
@@ -465,15 +526,23 @@
       if (c.stock < 0 || c.capacity <= 0) return 'bad-compartment-range: ' + key;
       if (c.stock > c.capacity + 1e-9) return 'stock-exceeds-capacity: ' + key;
     }
-    /* 實體：數量固定、欄位有限且於界內、ID 唯一 */
+    /* 實體：RBC 恰 48、WBC ≤ WBC_MAX、欄位有限且於界內、ID 唯一（1.1.0） */
     if (!snap.entities || typeof snap.entities !== 'object') return 'bad-entities';
     const ids = Object.keys(snap.entities);
-    if (ids.length !== CSL.ENTITY_COUNT) return 'entity-count-mismatch: ' + ids.length;
+    let rbcCount = 0, wbcCount = 0;
+    for (const k of ids) {
+      const ek = snap.entities[k] && snap.entities[k].kind;
+      if (ek === 'rbc') rbcCount++;
+      else if (ek === 'wbc') wbcCount++;
+    }
+    if (rbcCount !== CSL.ENTITY_COUNT) return 'entity-count-mismatch: ' + rbcCount;
+    if (wbcCount > CSL.WBC_MAX) return 'wbc-count-exceeds-max: ' + wbcCount;
     const nEdges = CSL.EDGES.length;
     const seenIds = new Set();
     for (const k of ids) {
       const e = snap.entities[k];
-      if (!e || e.kind !== 'rbc') return 'bad-entity-kind: ' + k;
+      if (!e || (e.kind !== 'rbc' && e.kind !== 'wbc')) return 'bad-entity-kind: ' + k;
+      if (e.kind === 'wbc' && e.load !== 0) return 'bad-wbc-load: ' + k;
       if (!Number.isInteger(e.id) || e.id <= 0) return 'bad-entity-id: ' + k;
       if (seenIds.has(e.id)) return 'duplicate-entity-id: ' + e.id;   // 身分唯一契約
       seenIds.add(e.id);
@@ -494,6 +563,14 @@
     if (!VL) return 'missing-volume-ledger';
     for (const key of ['intake', 'sweat', 'lastCheckTick', 'lastResidual']) {
       if (!isFinNum(VL[key]) || (key !== 'lastResidual' && key !== 'lastCheckTick' && VL[key] < 0)) return 'bad-volume-ledger: ' + key;
+    }
+    /* 免疫狀態：欄位齊、有限、非負、界限內 */
+    const IM = snap.immunity;
+    if (!IM) return 'missing-immunity';
+    if (!isFinNum(IM.remaining) || IM.remaining < 0 || IM.remaining > 1) return 'bad-immunity: remaining';
+    if (typeof IM.active !== 'boolean') return 'bad-immunity: active';
+    for (const key of ['epTotal', 'epDone', 'spawnCd']) {
+      if (!Number.isInteger(IM[key]) || IM[key] < 0) return 'bad-immunity: ' + key;
     }
     /* 動作與待處理 command */
     if (!Array.isArray(snap.actions)) return 'bad-actions';
@@ -570,6 +647,7 @@
     w._co2High = !!snap.co2High;
     w._lastCo2 = snap.lastCo2 === undefined ? null : snap.lastCo2;
     w.volumeLedger = snap.volumeLedger || { intake: 0, sweat: 0, lastCheckTick: -30, lastResidual: 0 };
+    w.immunity = snap.immunity || { remaining: 0, active: false, epTotal: 0, epDone: 0, spawnCd: 0 };
     w._volumeLow = !!snap.volumeLow;
     w._lastVolume = snap.lastVolume === undefined ? null : snap.lastVolume;
     w.pendingCommands = snap.pendingCommands || [];
@@ -599,6 +677,7 @@
       compartments: w.compartments,
       co2: w.co2,
       volumeLedger: w.volumeLedger,
+      immunity: w.immunity,
       ledger: w.ledger,
       actions: w.actions,
       events: w.events,
