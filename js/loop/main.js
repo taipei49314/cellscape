@@ -217,9 +217,9 @@
         el.addEventListener('input', () => {
           const key = el.dataset.key;
           const v = parseFloat(el.value);
-          $('pv_' + key).textContent = key === 'altitudeM' ? String(Math.round(v)) : v.toFixed(2);
+          $('pv_' + key).textContent = key === 'altitudeM' ? String(Math.round(v)) : (key === 'fluidRate' ? v.toFixed(3) : v.toFixed(2));
           CSL.queueCommand(this.world, { kind: 'setParam', key, value: v, source: 'user' });
-          if (key === 'lungSupply' || key === 'anemia' || key === 'altitudeM') this.ensureBranch();   // 首次介入建立 A/B
+          if (key === 'lungSupply' || key === 'anemia' || key === 'altitudeM' || key === 'fluidRate') this.ensureBranch();   // 首次介入建立 A/B
         });
       });
       /* 藥物介入快速預設：與滑桿同一 setParam 事件路徑（CSL.queueCommand 唯一入口），
@@ -229,9 +229,11 @@
         betaBlocker: { params: { flowSpeed: 0.6 }, note: '藥物介入（模型）：乙型阻斷劑——循環流速降至 0.60。模型單位，非用藥建議。' },
         fever: { params: { tissueDemand: 0.85, temperature: 39.5 }, note: '藥物介入（模型）：發燒／敗血症——組織需求升至 0.85、體溫升至 39.5 °C（Q10 使使用與 CO₂ 連動上升）。模型單位，非用藥建議。' },
         altitude: { params: { altitudeM: 4000 }, note: '藥物介入（模型）：登上高地——海拔設為 4000 m（吸入氧比例下降、過度換氣上升）。模型單位，非旅遊或健康建議。' },
+        heatstroke: { params: { temperature: 40, fluidRate: 0 }, note: '藥物介入（模型）：中暑——體溫升至 40 °C 且無補水（出汗使容積下降、volFrac 調降流動與卸載）。模型單位，非用藥建議。' },
+        infusion: { params: { fluidRate: 0.004 }, note: '藥物介入（模型）：靜脈輸液——補水速率 0.004／tick（回補容積）。模型單位，非用藥建議。' },
         transfusion: { params: { anemia: 0 }, note: '藥物介入（模型）：輸血——貧血程度歸零（Hb 可用上限恢復）。模型單位，非用藥建議。' },
         antipyretic: { params: { temperature: 37 }, note: '藥物介入（模型）：退燒——體溫回復 37.0 °C。模型單位，非用藥建議。' },
-        baseline: { params: { lungSupply: 0.85, flowSpeed: 1, tissueDemand: 0.5, anemia: 0, temperature: 37, perfusion: 1, altitudeM: 0 }, note: '藥物介入（模型）：參數回復基準值（含貧血、體溫、灌流與海拔）。' },
+        baseline: { params: { lungSupply: 0.85, flowSpeed: 1, tissueDemand: 0.5, anemia: 0, temperature: 37, perfusion: 1, altitudeM: 0, fluidRate: 0 }, note: '藥物介入（模型）：參數回復基準值（含貧血、體溫、灌流、海拔與補水）。' },
       };
       document.querySelectorAll('#drugPanel .drug').forEach((el) => {
         el.addEventListener('click', () => {
@@ -242,7 +244,7 @@
             /* 指令下一 tick 才套用且 _tickUI 不同步滑桿——比照滑桿 input 先寫顯示值 */
             const input = document.querySelector(`#paramPanel input[data-key=${key}]`);
             if (input) input.value = value;
-            $('pv_' + key).textContent = key === 'altitudeM' ? String(Math.round(Number(value))) : Number(value).toFixed(2);
+            $('pv_' + key).textContent = key === 'altitudeM' ? String(Math.round(Number(value))) : (key === 'fluidRate' ? Number(value).toFixed(3) : Number(value).toFixed(2));
           }
           this.ensureBranch();
           const noteKey = 'drug.note.' + el.dataset.preset;
@@ -416,10 +418,10 @@
         }).join('') + '<div class="ev dim" data-collapse="1" style="cursor:pointer">— 點此收合因果鏈（程式內來源證明，非自然界因果）—</div>';
     },
     _syncParamsUI() {
-      for (const key of ['lungSupply', 'flowSpeed', 'tissueDemand', 'anemia', 'temperature', 'perfusion', 'altitudeM']) {
+      for (const key of ['lungSupply', 'flowSpeed', 'tissueDemand', 'anemia', 'temperature', 'perfusion', 'altitudeM', 'fluidRate']) {
         const el = document.querySelector(`#paramPanel input[data-key=${key}]`);
         el.value = this.world.params[key];
-        $('pv_' + key).textContent = key === 'altitudeM' ? String(Math.round(Number(this.world.params[key]))) : Number(this.world.params[key]).toFixed(2);
+        $('pv_' + key).textContent = key === 'altitudeM' ? String(Math.round(Number(this.world.params[key]))) : (key === 'fluidRate' ? Number(this.world.params[key]).toFixed(3) : Number(this.world.params[key]).toFixed(2));
       }
     },
     _syncLang() {
