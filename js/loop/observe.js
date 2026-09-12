@@ -183,6 +183,64 @@
       return { state: 'flat', text: '近乎不變', ...window };
     },
 
+    /* ---------- 速率序列（T-319 速率曲線圖） ----------
+       以既有 tickRing 產生時間序列：每點都是「以該 tick 為右端、長度 n 的滾動窗口」，
+       與 readout() 的 flux_lung_rate／flux_tissue_rate／usage_rate 同一套算法。
+       契約：
+       - 窗口不完整（缺右端、缺基線、或環內有缺口）⇒ 該點標 missing，
+         **不插補、不以 0 頂替**，呼叫端必須畫成空白而非零線。
+       - 只讀 tickRing，不寫模型欄位、不改觀察狀態（含不重排 ring）。
+       - 時間上界沿用 120 模型秒；右端恆為本分支最後記錄的 tick。 */
+    rateSeries(w, branchId, opts) {
+      opts = opts || {};
+      const n = opts.windowTicks || RATE_WINDOW;
+      const every = opts.every || SAMPLE_EVERY;
+      const spanTicks = opts.spanTicks || 3600;
+      const meta = { window: { ticks: n, seconds: n * DT }, dt: DT, everyTicks: every };
+      if (!this.enabled) return { available: false, reason: 'disabled', points: [], ...meta };
+      const b = this._branches[branchId];
+      if (!b || !b.tickRing.length) return { available: false, reason: 'no-session', points: [], ...meta };
+      const ring = b.tickRing;
+      const endTick = w && typeof w.tick === 'number' ? Math.min(w.tick, b.lastRecorded) : b.lastRecorded;
+      if (endTick < 0) return { available: false, reason: 'no-session', points: [], ...meta };
+      /* 單次線性掃描建索引與前綴和；之後每點 O(1)，不改動 ring 本身 */
+      const pos = new Map();
+      const pfl = new Array(ring.length + 1).fill(0);
+      const pft = new Array(ring.length + 1).fill(0);
+      for (let i = 0; i < ring.length; i++) {
+        pos.set(ring[i].t, i);
+        pfl[i + 1] = pfl[i] + ring[i].fl;
+        pft[i + 1] = pft[i] + ring[i].ft;
+      }
+      const startTick = Math.max(0, endTick - spanTicks);
+      const first = startTick + ((every - (startTick % every)) % every);
+      const points = [];
+      for (let t = first; t <= endTick; t += every) {
+        const i = pos.get(t);
+        const baseTick = t - n;
+        const j = baseTick >= 0 ? pos.get(baseTick) : undefined;
+        /* 右端、基線都要有實際記錄，且兩者之間必須連續 n 筆（i − j === n）——
+           任一不成立即為缺資料；baseTick < 0 代表窗口尚未填滿，同樣是缺資料。 */
+        if (i === undefined || j === undefined || i - j !== n) {
+          points.push({ t, sec: t * DT, missing: true });
+          continue;
+        }
+        points.push({
+          t, sec: t * DT, missing: false,
+          lung: (pfl[i + 1] - pfl[j + 1]) / (n * DT),
+          tissue: (pft[i + 1] - pft[j + 1]) / (n * DT),
+          usage: (ring[i].u - ring[j].u) / (n * DT),
+        });
+      }
+      const observed = points.reduce((c, p) => c + (p.missing ? 0 : 1), 0);
+      return {
+        available: observed > 0,
+        reason: observed > 0 ? null : 'missing-window',
+        points, observedPoints: observed, totalPoints: points.length,
+        fromTick: first, toTick: endTick, ...meta,
+      };
+    },
+
     /* 覆蓋樣本所涵蓋的時間（模型秒） */
     coverageSeconds(branchId, entityId) {
       const h = this.loadHistory(branchId, entityId);
