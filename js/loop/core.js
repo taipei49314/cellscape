@@ -15,7 +15,15 @@
      （MODEL_RULE_IDENTITY 契約）。
      0.2.2：digest 納入 eventSeq（DIGEST_SCOPE 修復）＋事件 kind 相依 payload
      深驗證。舊包之 digestChainTail 以舊正規化計算，無法跨版延續，故顯式拒絕。 */
-  CSL.MODEL_VERSION = '1.1.0';   /* 1.1.0：生理縱深第三軸——免疫招募（T-353）。新參數 infection（0–1）
+  CSL.MODEL_VERSION = '1.2.0';   /* 1.2.0：生理縱深第四軸——血糖—胰島素（T-359）。新參數
+     glucoseIntake（0–0.02／tick，預設 0＝禁食中立）連續碳水攝入流入新 compartment glucose
+     （0–4.0，「相對禁食基線的升高指數」，0 起始）；組織攝取率＝基線項（胰島素非依賴——涵蓋
+     RBC 等基礎糖耗敘事）＋胰島素放大項。新狀態 insulin（level 0.30 禁食基線–1.0）：血糖指數
+     ≥0.55 每 tick 上升（閾值分泌）、回落向基線衰退；glucoseHigh 閾值事件（≥0.55 觸發、<0.45
+     解除遲滯）與 insulin_response system 事件（每個高血糖 episode 一次）。glucoseLedger
+     （intake/uptake）每 30 tick 殘差檢查。模型指數，非臨床血糖值。新 compartment／狀態／
+     digest 結構＝身分契約變更，1.1.0 舊包匯入顯式拒絕。
+     1.1.0：生理縱深第三軸——免疫招募（T-353）。新參數 infection（0–1）
      釘組織感染於 TISSUE_CAP；新實體 kind 'wbc'（嗜中性球，WBC_MAX=8）自 VEIN_SYS 每 90 tick
      招募、沿 EDGES 移動、抵 TISSUE_CAP 即外滲（實體移除、infection remaining −0.125、歸零發
      infection_cleared）；免疫狀態 immunity（remaining/active/epTotal/epDone/spawnCd）入 digest。
@@ -90,15 +98,18 @@
       branchOf: opts.branchOf || null,
       tick: 0,
       rng: new Rng(seed).getState(),          // 模型 RNG 狀態（唯一；視覺 RNG 在渲染層）
-      params: { lungSupply: 0.85, flowSpeed: 1.0, tissueDemand: 0.5, anemia: 0, temperature: 37.0, perfusion: 1.0, altitudeM: 0, fluidRate: 0, infection: 0 },
+      params: { lungSupply: 0.85, flowSpeed: 1.0, tissueDemand: 0.5, anemia: 0, temperature: 37.0, perfusion: 1.0, altitudeM: 0, fluidRate: 0, infection: 0, glucoseIntake: 0 },
       entities: {},                            // id → {id, kind:'rbc', edge, s, load, cap, loops}
       compartments: {
         alveolar: { stock: 6.0, capacity: 40 }, // 肺泡側氧庫存（模型單位）
         tissue: { stock: 10.0, capacity: 25 },  // 組織氧庫存（模型單位）
         volume: { stock: 5.0, capacity: 5.0 },  // 血漿容積（1.0.0；載體小帳，不進氧守恆帳）
+        glucose: { stock: 0, capacity: 4.0 },   // 血漿葡萄糖升高指數（1.2.0；代謝小帳，不進氧守恆帳）
       },
       volumeLedger: { intake: 0, sweat: 0, lastCheckTick: -30, lastResidual: 0 },
+      glucoseLedger: { intake: 0, uptake: 0, lastCheckTick: -30, lastResidual: 0 },
       immunity: { remaining: 0, active: false, epTotal: 0, epDone: 0, spawnCd: 0 },
+      insulin: { level: 0.30 },                // 胰島素水位（1.2.0；0.30＝禁食基線，模型指數）
       ledger: { initialTotal: 0, input: 0, usage: 0, expelled: 0, lastCheckTick: -1, lastResidual: 0 },
       /* CO₂ 指數（0–1；0.4.0）：血液 CO₂ 相對量的聚合指標（非分子帳）。
          基準點 0.30＝預設參數下的穩態；生產隨 O₂ 使用量，排出隨肺端通氣。 */
@@ -111,6 +122,7 @@
       _tissueLow: false, _lastTissueLevel: null, _lastParamEvent: null,
       _co2High: false, _lastCo2: null,
       _volumeLow: false, _lastVolume: null,
+      _glucoseHigh: false, _lastGlucose: null,
       _fluxLung: 0, _fluxTissue: 0,
     };
     /* 初始實體：沿循環均勻撒佈（模型 RNG 僅用於初始抖動） */
@@ -179,7 +191,7 @@
     const cmd = entry.cmd;
     if (cmd.kind === 'setParam') {
       const key = cmd.key;
-      const limits = { lungSupply: [0, 1], tissueDemand: [0, 1], flowSpeed: [0.2, 3], anemia: [0, 0.9], temperature: [36, 41], perfusion: [0.2, 1.8], altitudeM: [0, 6000], fluidRate: [0, 0.02], infection: [0, 1] };
+      const limits = { lungSupply: [0, 1], tissueDemand: [0, 1], flowSpeed: [0.2, 3], anemia: [0, 0.9], temperature: [36, 41], perfusion: [0.2, 1.8], altitudeM: [0, 6000], fluidRate: [0, 0.02], infection: [0, 1], glucoseIntake: [0, 0.02] };
       if (!(key in limits)) return;
       const v = Math.min(limits[key][1], Math.max(limits[key][0], Number(cmd.value)));
       const before = w.params[key];
@@ -215,11 +227,14 @@
       f6(w.compartments.alveolar.stock) + '|' + f6(w.compartments.alveolar.capacity) + '|' +
       f6(w.compartments.tissue.stock) + '|' + f6(w.compartments.tissue.capacity) + '|' +
       f6(w.compartments.volume.stock) + '|' + f6(w.compartments.volume.capacity) + '|' +
+      f6(w.compartments.glucose.stock) + '|' + f6(w.compartments.glucose.capacity) + '|' +
       (w._tissueLow ? 1 : 0) + '|' + f6(w._lastTissueLevel == null ? -1 : w._lastTissueLevel) + '|' +
       (w._co2High ? 1 : 0) + '|' + f6(w._lastCo2 == null ? -1 : w._lastCo2) + '|' +
       (w._volumeLow ? 1 : 0) + '|' + f6(w._lastVolume == null ? -1 : w._lastVolume) + '|' +
+      (w._glucoseHigh ? 1 : 0) + '|' + f6(w._lastGlucose == null ? -1 : w._lastGlucose) + '|' +
       f6(w.immunity.remaining) + '|' + (w.immunity.active ? 1 : 0) + '|' + w.immunity.epTotal + '|' +
       w.immunity.epDone + '|' + w.immunity.spawnCd + '|' +
+      f6(w.insulin.level) + '|' +
       f6(w.co2.blood) + '|' + f6(w.co2.produced) + '|' + f6(w.co2.expelled) + '|' + f6(w.co2.retained) + '|' +
       (w._lastParamEvent ? w._lastParamEvent.eventId : 0) + '|' +
       w.eventSeq + '|' +
@@ -411,6 +426,30 @@
       w.volumeLedger.sweat += sweatOut;
     }
 
+    /* 5.7) 血糖—胰島素（1.2.0）：連續攝入流入、組織攝取流出——代謝小帳，不進氧守恆帳。
+       glucose.stock 為「相對禁食基線的升高指數」（0 起始；模型指數，非臨床血糖值）。
+       攝取率＝基線項（胰島素非依賴）＋胰島素放大項；胰島素水位對血糖高值響應（閾值分泌）。 */
+    {
+      const g = w.compartments.glucose;
+      const gIn = Math.min(w.params.glucoseIntake, Math.max(0, g.capacity - g.stock));
+      g.stock += gIn;
+      w.glucoseLedger.intake += gIn;
+      const gLevel = g.stock / g.capacity;
+      const ins = w.insulin;
+      if (gLevel >= 0.55) {
+        const beforeLevel = ins.level;
+        ins.level = Math.min(1.0, ins.level + 0.04);
+        if (beforeLevel < 0.35 && ins.level >= 0.35) {
+          CSL.emitEvent(w, { kind: 'system', ruleId: 'insulin_response', regionId: 'TISSUE_CAP', note: 'secretion' });
+        }
+      } else if (ins.level > 0.30) {
+        ins.level = Math.max(0.30, ins.level - 0.01);
+      }
+      const uptake = Math.min(g.stock, 0.002 + 0.012 * (ins.level - 0.30) / 0.70);
+      g.stock -= uptake;
+      w.glucoseLedger.uptake += uptake;
+    }
+
     /* 6) 閾值事件（下游差異可追溯至引起參數變更的 command） */
     const low = tLevel < 0.25;
     if (low && !w._tissueLow) {
@@ -452,11 +491,32 @@
     w._volumeLow = vLow;
     w._lastVolume = vLevel;
 
+    /* 血糖高值（遲滯：≥0.55 觸發、<0.45 解除）——模型指數警示，非臨床判讀 */
+    const gLevelNow = w.compartments.glucose.stock / w.compartments.glucose.capacity;
+    const gHigh = w._glucoseHigh ? (gLevelNow >= 0.45) : (gLevelNow >= 0.55);
+    if (gHigh && !w._glucoseHigh) {
+      CSL.emitEvent(w, {
+        kind: 'threshold', regionId: 'TISSUE_CAP', ruleId: 'glucoseHigh',
+        before: { level: w._lastGlucose == null ? null : f6(w._lastGlucose) },
+        after: { level: f6(gLevelNow) },
+        note: 'glucose-high',
+      });
+    }
+    w._glucoseHigh = gHigh;
+    w._lastGlucose = gLevelNow;
+
     /* 容積小帳檢查（每 30 tick）：intake − sweat ＝ 容積變化量（初始滿容 5.0） */
     if (w.tick - w.volumeLedger.lastCheckTick >= 30) {
       const vres = w.volumeLedger.intake - w.volumeLedger.sweat - (w.compartments.volume.stock - w.compartments.volume.capacity);
       w.volumeLedger.lastResidual = vres;
       w.volumeLedger.lastCheckTick = w.tick;
+    }
+
+    /* 血糖小帳檢查（每 30 tick）：intake − uptake ＝ 指數庫存變化量（0 起始） */
+    if (w.tick - w.glucoseLedger.lastCheckTick >= 30) {
+      const gres = w.glucoseLedger.intake - w.glucoseLedger.uptake - w.compartments.glucose.stock;
+      w.glucoseLedger.lastResidual = gres;
+      w.glucoseLedger.lastCheckTick = w.tick;
     }
 
     /* CO₂ 帳檢查（每 30 tick）：生產 − 排出 − 保留 ＝ 血中指數變化量 */
@@ -490,17 +550,20 @@
       ledger: w.ledger, actions: w.actions,
       co2: w.co2,
       volumeLedger: w.volumeLedger,
+      glucoseLedger: w.glucoseLedger,
       immunity: w.immunity,
+      insulin: w.insulin,
       events: w.events, eventSeq: w.eventSeq,
       pendingCommands: w.pendingCommands, idSeq: w.idSeq,
       tissueLow: !!w._tissueLow, lastTissueLevel: w._lastTissueLevel == null ? null : w._lastTissueLevel,
       co2High: !!w._co2High, lastCo2: w._lastCo2 == null ? null : w._lastCo2,
       volumeLow: !!w._volumeLow, lastVolume: w._lastVolume == null ? null : w._lastVolume,
+      glucoseHigh: !!w._glucoseHigh, lastGlucose: w._lastGlucose == null ? null : w._lastGlucose,
       lastParamEvent: w._lastParamEvent || null,
       digestChainTail: w.digestChain.slice(-64),
     }));
   };
-  const PARAM_LIMITS = { lungSupply: [0, 1], tissueDemand: [0, 1], flowSpeed: [0.2, 3], anemia: [0, 0.9], temperature: [36, 41], perfusion: [0.2, 1.8], altitudeM: [0, 6000], fluidRate: [0, 0.02], infection: [0, 1] };
+  const PARAM_LIMITS = { lungSupply: [0, 1], tissueDemand: [0, 1], flowSpeed: [0.2, 3], anemia: [0, 0.9], temperature: [36, 41], perfusion: [0.2, 1.8], altitudeM: [0, 6000], fluidRate: [0, 0.02], infection: [0, 1], glucoseIntake: [0, 0.02] };
   CSL.PARAM_LIMITS = PARAM_LIMITS;
   const isFinNum = (v) => typeof v === 'number' && isFinite(v);
 
@@ -520,7 +583,7 @@
       if (!isFinNum(v) || v < PARAM_LIMITS[key][0] || v > PARAM_LIMITS[key][1]) return 'bad-param: ' + key;
     }
     /* 庫存：有限、非負、容量為正、存量不超過容量 */
-    for (const key of ['alveolar', 'tissue', 'volume']) {
+    for (const key of ['alveolar', 'tissue', 'volume', 'glucose']) {
       const c = snap.compartments && snap.compartments[key];
       if (!c || !isFinNum(c.stock) || !isFinNum(c.capacity)) return 'bad-compartment: ' + key;
       if (c.stock < 0 || c.capacity <= 0) return 'bad-compartment-range: ' + key;
@@ -571,6 +634,15 @@
     if (typeof IM.active !== 'boolean') return 'bad-immunity: active';
     for (const key of ['epTotal', 'epDone', 'spawnCd']) {
       if (!Number.isInteger(IM[key]) || IM[key] < 0) return 'bad-immunity: ' + key;
+    }
+    /* 胰島素狀態（1.2.0）：level 有限、於動態界 [0.30, 1] 內 */
+    const IS = snap.insulin;
+    if (!IS || !isFinNum(IS.level) || IS.level < 0.3 || IS.level > 1) return 'bad-insulin: level';
+    /* 血糖小帳：欄位齊、有限、非負 */
+    const GL = snap.glucoseLedger;
+    if (!GL) return 'missing-glucose-ledger';
+    for (const key of ['intake', 'uptake', 'lastCheckTick', 'lastResidual']) {
+      if (!isFinNum(GL[key]) || (key !== 'lastResidual' && key !== 'lastCheckTick' && GL[key] < 0)) return 'bad-glucose-ledger: ' + key;
     }
     /* 動作與待處理 command */
     if (!Array.isArray(snap.actions)) return 'bad-actions';
@@ -624,7 +696,7 @@
           if (typeof ev.regionId !== 'string') return 'bad-event-region';
           if (!handPayload(ev.before) || !handPayload(ev.after)) return 'bad-event-payload';
         } else if (ev.kind === 'threshold') {
-          if (ev.ruleId !== 'tissueStockLow' && ev.ruleId !== 'co2BloodHigh' && ev.ruleId !== 'volumeLow') return 'bad-event-rule';
+          if (ev.ruleId !== 'tissueStockLow' && ev.ruleId !== 'co2BloodHigh' && ev.ruleId !== 'volumeLow' && ev.ruleId !== 'glucoseHigh') return 'bad-event-rule';
           if (!thrPayload(ev.before, false) || !thrPayload(ev.after, true)) return 'bad-event-payload';
         } else if (ev.kind !== 'system' && ev.kind !== 'tour') {
           return 'bad-event-kind';
@@ -648,6 +720,10 @@
     w._lastCo2 = snap.lastCo2 === undefined ? null : snap.lastCo2;
     w.volumeLedger = snap.volumeLedger || { intake: 0, sweat: 0, lastCheckTick: -30, lastResidual: 0 };
     w.immunity = snap.immunity || { remaining: 0, active: false, epTotal: 0, epDone: 0, spawnCd: 0 };
+    w.glucoseLedger = snap.glucoseLedger || { intake: 0, uptake: 0, lastCheckTick: -30, lastResidual: 0 };
+    w.insulin = snap.insulin || { level: 0.30 };
+    w._glucoseHigh = !!snap.glucoseHigh;
+    w._lastGlucose = snap.lastGlucose === undefined ? null : snap.lastGlucose;
     w._volumeLow = !!snap.volumeLow;
     w._lastVolume = snap.lastVolume === undefined ? null : snap.lastVolume;
     w.pendingCommands = snap.pendingCommands || [];
@@ -677,7 +753,9 @@
       compartments: w.compartments,
       co2: w.co2,
       volumeLedger: w.volumeLedger,
+      glucoseLedger: w.glucoseLedger,
       immunity: w.immunity,
+      insulin: w.insulin,
       ledger: w.ledger,
       actions: w.actions,
       events: w.events,
@@ -689,6 +767,8 @@
       lastCo2: w._lastCo2 == null ? null : w._lastCo2,
       volumeLow: !!w._volumeLow,
       lastVolume: w._lastVolume == null ? null : w._lastVolume,
+      glucoseHigh: !!w._glucoseHigh,
+      lastGlucose: w._lastGlucose == null ? null : w._lastGlucose,
       lastParamEvent: w._lastParamEvent || null,
       digestChainTail: w.digestChain.slice(-256),
     });

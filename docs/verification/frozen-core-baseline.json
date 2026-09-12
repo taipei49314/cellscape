@@ -4,7 +4,7 @@
   "pinned_at_main": "31506887cef3c913cb434b8733d8d522a4df0f36",
   "pinned_at_utc": "2026-09-12T05:10:00Z",
   "files": {
-    "js/loop/core.js": "18352d96abea6105aa794330fab06a4fba0ee9661f91e68fb5d107f8a58a89c8",
+    "js/loop/core.js": "2eb1e3f6293caab766d2dc0eb4757aefa113f05744de4eab75beb868a5c4fa85",
     "js/loop/model.js": "d779fba758eb658eb7ddd60ef950e4dafbc3ed5282f35459ede8b85b15cb68b5",
     "js/loop/render.js": "a2f82ba92a3c6489d163bbd1b539dc2594969ae7ae3eed3f1398fba318576fdf",
     "js/loop/tour.js": "06e0ccca55d894c2036e978776b977f42fa35f148b416eaab667be327aa3f7ef",
