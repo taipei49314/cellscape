@@ -1,4 +1,4 @@
-# Cellscape · Living Atlas（產品 0.4.0 · 模型 0.7.0）
+# Cellscape · Living Atlas（產品 0.4.0 · 模型 0.8.0）
 
 **私有倉（已推送）· Gate A/B 資訊層已收尾，其後另加三個模型維度 · 最後更新 2026-09-11（UTC）**
 
@@ -37,12 +37,12 @@ npm test
 # 等同 node scripts/test.cjs
 ```
 
-此命令執行隨包的 Atlas 24 項、Loop 7 項、模型行為契約 11 項與最終觀察邊界 4 項（共 46 項）；**不是完整瀏覽器或生物學驗證**。模型行為契約涵蓋貧血上限、Q10、CO₂ 鉗位與帳目、參數界限，以及凍結檔雜湊守門——**T-325 起全七檔**（core／model／render／tour／content／engine／data）依 `docs/verification/frozen-core-baseline.json`（main `31506887`）實守；歷史收據 `unchanged-core.json` 不改寫。再改任一凍結檔須人類具名解凍並另建基線。
+此命令執行隨包的 Atlas 25 項、Loop 7 項、模型行為契約 11 項與最終觀察邊界 4 項（共 47 項）；**不是完整瀏覽器或生物學驗證**。模型行為契約涵蓋貧血上限、Q10、CO₂ 鉗位與帳目、參數界限，以及凍結檔雜湊守門——**T-325 起全七檔**（core／model／render／tour／content／engine／data）依 `docs/verification/frozen-core-baseline.json`（main `31506887`）實守；歷史收據 `unchanged-core.json` 不改寫。再改任一凍結檔須人類具名解凍並另建基線。
 兩道 pool CI（`npm test`、`browser acceptance`）在每個 PR 與 main 推送上執行。封存輪的 evidence ZIP 不在本倉內；審查範圍見 `docs/FINAL-REVIEW.md`，模型 0.3.0–0.5.0 的 CI 收據見 `docs/verification/`。
 
 ## 版本與資料界線
 
-產品 **0.4.0**；模型 **0.7.0**（0.3.0 `anemia`；0.4.0 CO₂ 指數與 Bohr；0.5.0 `temperature`／Q10；0.5.1 CO₂ 閾值匯入修復；0.6.0 `perfusion` 參數；**0.7.0 拓樸雙組織床血流再分配**——`TISSUE_CAP_2`，perfusion≤1 主/次床分流，1.0＝0.6.0 行為；守恆帳結構不變）；觀察規則 **v0.3.2-obs.2**。
+產品 **0.4.0**；模型 **0.8.0**（0.3.0 `anemia`；0.4.0 CO₂ 指數與 Bohr；0.5.0 `temperature`／Q10；0.5.1 CO₂ 閾值匯入修復；0.6.0 `perfusion` 參數；0.7.0 拓樸雙組織床；**0.8.0 RBC 世代輪替**——滿圈退役＋肺端同槽替換，總量仍 48；守恆帳結構不變）；觀察規則 **v0.3.2-obs.2**。
 氧庫存／負載／速率均為未校準的模型數值，不是 SpO₂、血氧分壓或臨床指標。結構圖不是分子模擬。
 摘要不是完整事件歷史的身分證明。較早未保存的觀察資料不會由事件尾反推成曲線。
 

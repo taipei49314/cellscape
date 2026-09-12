@@ -627,11 +627,45 @@ const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^
     };
   })()`);
   check('f2-dual-bed-perfusion-redistribution',
-    r.version === '0.7.0' && r.nTissue === 2
+    r.nTissue === 2
       && r.sites.join(',') === 'primary,secondary'
       && r.at1SecondaryZero && r.at1PrimaryPositive
       && r.at04SecondaryPositive && r.at04PrimaryLess,
     JSON.stringify(r));
+}
+
+/* 25. F3 RBC 世代輪替（0.8.0）：強制 loops 達上限後退役；總量仍 48；
+       殘餘 load 記入 expelled；同槽回到肺端且 loops 歸零。 */
+{
+  const r = run(`(()=>{
+    const w = CSL.createWorld({ seed: 313 });
+    const maxL = CSL.RBC_MAX_LOOPS;
+    const id = '1';
+    w.entities[id].loops = maxL;
+    w.entities[id].load = 0.5;
+    /* 放在無交換邊（左心），避免同 tick 卸載改變殘餘量 */
+    w.entities[id].edge = CSL.EDGES.findIndex((x) => x.id === 'HEART_L');
+    w.entities[id].s = 0.5;
+    const nBefore = Object.keys(w.entities).length;
+    const expelledBefore = w.ledger.expelled;
+    CSL.step(w);
+    const e = w.entities[id];
+    const lungIdx = CSL.EDGES.findIndex((x) => x.id === 'LUNG_CAP');
+    const retires = w.events.filter((ev) => ev.kind === 'rbc_retire');
+    return {
+      version: CSL.MODEL_VERSION, maxL,
+      nBefore, nAfter: Object.keys(w.entities).length,
+      loops: e.loops, edge: e.edge, lungIdx, load: e.load,
+      expelledDelta: w.ledger.expelled - expelledBefore,
+      nRetire: retires.length,
+      replaced: e.loops === 0 && e.edge === lungIdx && Math.abs(e.load - 0.12) < 1e-9,
+      conservedCount: Object.keys(w.entities).length === 48
+    };
+  })()`);
+  check('f3-rbc-turnover-retire-replace',
+    r.version === '0.8.0' && r.maxL >= 1 && r.nAfter === r.nBefore
+      && r.replaced && r.nRetire >= 1 && Math.abs(r.expelledDelta - 0.5) < 1e-9
+      && r.conservedCount, JSON.stringify(r));
 }
 
 let fails = 0;

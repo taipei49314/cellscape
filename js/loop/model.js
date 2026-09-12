@@ -28,6 +28,10 @@
   CSL.K_TISSUE = 0.045; // 組織卸載係數：flux = K × max(0, 負載 − 組織水位) × demand
   CSL.K_USE = 0.09;     // 組織消耗係數：usage = K × (0.5 + tissueDemand) × 組織水位
 
+  /* RBC 世代輪替（0.8.0／T-329 F3）：滿圈數退役並在肺端替換同槽新球。
+     總量固定 48（C-model-48）；不是全身紅血球生命週期校準。 */
+  CSL.RBC_MAX_LOOPS = 8;
+
   /* ---------- 位置輔助（初始撒佈用） ---------- */
   CSL.totalCycleTicks = function () {
     return CSL.EDGES.reduce((s, e) => s + e.baseTicks, 0);

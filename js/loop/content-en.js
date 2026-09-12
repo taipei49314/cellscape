@@ -144,7 +144,8 @@
       'C-legacy-indep':   'The eight legacy scenes (index.html) share no model state with this linked world.',
       'C-model-co2':      'CO₂ is approximated as a 0–1 index: produced in the tissues in step with usage, expelled at the lung in step with ventilation; the Bohr effect is approximated as an unloading multiplier (0.75–1.35).',
       'C-model-temp':     'Body temperature multiplies the O₂ usage rate by a Q10 factor (2^((T−37)/10)); CO₂ production follows usage.',
-      'C-model-perfusion':'The perfusion parameter represents the share of blood flow reaching this tissue bed and only multiplies the tissue-side unloading flux; this model has a single tissue bed and does not model any other vascular bed.',
+      'C-model-perfusion':'Perfusion redistributes unloading across two topology beds (0.7.0): when ≤1 the primary bed gets ×p and the secondary ×max(0,1−p); >1 all to primary. 1.0 matches 0.6.0 single-bed behaviour.',
+      'C-model-rbc-turnover':'After RBC_MAX_LOOPS full cycles an RBC is retired and replaced in the same slot at the lung; residual load is counted as expelled; count stays 48.',
       'C-model-anemia':   'The anemia parameter only gates the lung-side loading ceiling ((1 − anemia) × capacity); it does not retroactively change oxygen already carried, and the conservation ledger is unchanged.'
     },
 
