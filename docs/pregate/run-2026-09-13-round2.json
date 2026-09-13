@@ -1,0 +1,196 @@
+{
+ "ranAt": "2026-09-13T02:57:06.891Z",
+ "model": "qwen3.5:9b",
+ "endpoint": "http://127.0.0.1:11434/v1",
+ "n": 5,
+ "pass": 0,
+ "results": [
+  {
+   "n": 1,
+   "verdict": "FAIL",
+   "codes": [
+    "no_direction",
+    "no_where",
+    "claimed_change_where_none"
+   ],
+   "details": {
+    "tis_clause": "組織水位39%",
+    "alv": "up",
+    "mean_clause": "平均負載從0.17增到0.65"
+   },
+   "action": {
+    "key": "tissueDemand",
+    "direction": "up",
+    "from": 0.5,
+    "to": 0.8,
+    "label": "組織需求"
+   },
+   "statement": "我提升了組織需求從0.5到0.8，肺泡水位升到100%、組織水位39%，平均負載從0.17增到0.65",
+   "transcript": [
+    {
+     "turn": 1,
+     "reply": "{\"action\":\"set_condition\",\"condition\":\"組織需求\",\"direction\":\"up\"}"
+    },
+    {
+     "turn": 2,
+     "reply": ""
+    },
+    {
+     "turn": 3,
+     "reply": "{\"action\":\"statement\",\"text\":\"我提升了組織需求從0.5到0.8，肺泡水位升到100%、組織水位39%，平均負載從0.17增到0.65\"}"
+    }
+   ],
+   "errors": []
+  },
+  {
+   "n": 2,
+   "verdict": "FAIL",
+   "codes": [
+    "claimed_change_where_none",
+    "no_causal_link"
+   ],
+   "details": {
+    "alv": "up",
+    "tis": "up",
+    "mean": "up"
+   },
+   "action": {
+    "key": "infection",
+    "direction": "up",
+    "from": 0,
+    "to": 0.5,
+    "label": "感染嚴重度"
+   },
+   "statement": "將感染嚴重度從0提升至0.5後，肺泡水位從24%急升至100%，組織水位增加到45%，平均負載從0.16大幅上升到0.69",
+   "transcript": [
+    {
+     "turn": 1,
+     "reply": ""
+    },
+    {
+     "turn": 2,
+     "reply": ""
+    },
+    {
+     "turn": 3,
+     "reply": "{\"action\":\"set_condition\",\"condition\":\"感染嚴重度\",\"direction\":\"up\"}"
+    },
+    {
+     "turn": 4,
+     "reply": "{\"action\":\"statement\",\"text\":\"將感染嚴重度從0提升至0.5後，肺泡水位從24%急升至100%，組織水位增加到45%，平均負載從0.16大幅上升到0.69\"}"
+    }
+   ],
+   "errors": []
+  },
+  {
+   "n": 3,
+   "verdict": "FAIL",
+   "codes": [
+    "no_where"
+   ],
+   "details": {
+    "tis_clause": "結果組織水位",
+    "alv_clause": "肺泡水位都大幅提升",
+    "mean_clause": "平均負載從0.16跳增到0.74"
+   },
+   "action": {
+    "key": "flowSpeed",
+    "direction": "up",
+    "from": 1,
+    "to": 2,
+    "label": "循環流速"
+   },
+   "statement": "把循環流速拉高，結果組織水位、肺泡水位都大幅提升，平均負載從0.16跳增到0.74，旅程也順利完成了。",
+   "transcript": [
+    {
+     "turn": 1,
+     "reply": ""
+    },
+    {
+     "turn": 2,
+     "reply": "{\"action\":\"set_condition\",\"condition\":\"循環流速\",\"direction\":\"up\"}"
+    },
+    {
+     "turn": 3,
+     "reply": "{\"action\":\"statement\",\"text\":\"把循環流速拉高，結果組織水位、肺泡水位都大幅提升，平均負載從0.16跳增到0.74，旅程也順利完成了。\"}"
+    }
+   ],
+   "errors": []
+  },
+  {
+   "n": 4,
+   "verdict": "FAIL",
+   "codes": [
+    "ambiguous_condition",
+    "reversed_or_wrong_effect",
+    "no_where"
+   ],
+   "details": {
+    "conditions": [
+     "lungSupply",
+     "tissueDemand"
+    ],
+    "tis": "claimed_up_expected_down",
+    "mean": "claimed_up_expected_down",
+    "alv_clause": "肺泡水位達到100%顯示供氧充足但組織庫存仍在恢復中"
+   },
+   "action": {
+    "key": "tissueDemand",
+    "direction": "up",
+    "from": 0.5,
+    "to": 0.8,
+    "label": "組織需求"
+   },
+   "statement": "我將組織需求從0.50改為0.80後發現：組織水位從32%上升到39%，平均負載從0.16增加到0.65，肺泡水位達到100%顯示供氧充足但組織庫存仍在恢復中",
+   "transcript": [
+    {
+     "turn": 1,
+     "reply": "{\"action\":\"set_condition\",\"condition\":\"組織需求\",\"direction\":\"up\"}"
+    },
+    {
+     "turn": 2,
+     "reply": ""
+    },
+    {
+     "turn": 3,
+     "reply": "{\"action\":\"statement\",\"text\":\"我將組織需求從0.50改為0.80後發現：組織水位從32%上升到39%，平均負載從0.16增加到0.65，肺泡水位達到100%顯示供氧充足但組織庫存仍在恢復中\"}"
+    }
+   ],
+   "errors": []
+  },
+  {
+   "n": 5,
+   "verdict": "FAIL",
+   "codes": [
+    "no_direction",
+    "reversed_or_wrong_effect"
+   ],
+   "details": {
+    "tis": "claimed_up_expected_down"
+   },
+   "action": {
+    "key": "lungSupply",
+    "direction": "down",
+    "from": 0.85,
+    "to": 0.55,
+    "label": "肺端供氧"
+   },
+   "statement": "我將肺端供氧下調後，肺部水位瞬間達滿載（100%），組織平均負重也從原先的零點一六大幅上升到了零點六五。",
+   "transcript": [
+    {
+     "turn": 1,
+     "reply": ""
+    },
+    {
+     "turn": 2,
+     "reply": "{\"action\":\"set_condition\",\"condition\":\"肺端供氧\",\"direction\":\"down\"}"
+    },
+    {
+     "turn": 3,
+     "reply": "{\"action\":\"statement\",\"text\":\"我將肺端供氧下調後，肺部水位瞬間達滿載（100%），組織平均負重也從原先的零點一六大幅上升到了零點六五。\"}"
+    }
+   ],
+   "errors": []
+  }
+ ]
+}

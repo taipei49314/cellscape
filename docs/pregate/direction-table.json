@@ -1,0 +1,195 @@
+{
+ "measuredAt": "2026-09-13T02:14:19.416Z",
+ "productCommit": "c43902f2",
+ "seed": 7,
+ "settleTicks": 240,
+ "windowTicks": 2400,
+ "speed": 1,
+ "neutralDisplay": {
+  "alv": 1,
+  "tis": 1,
+  "mean": 0.01
+ },
+ "baseline": {
+  "alv": 100,
+  "tis": 45,
+  "mean": 0.69
+ },
+ "directions": {
+  "lungSupply": {
+   "up": {
+    "alv": "flat",
+    "tis": "flat",
+    "mean": "flat",
+    "deltas": {
+     "alv": 0,
+     "tis": 0,
+     "mean": 0
+    }
+   },
+   "down": {
+    "alv": "flat",
+    "tis": "down",
+    "mean": "down",
+    "deltas": {
+     "alv": 0,
+     "tis": -1.3333,
+     "mean": -0.02
+    }
+   }
+  },
+  "flowSpeed": {
+   "up": {
+    "alv": "down",
+    "tis": "down",
+    "mean": "down",
+    "deltas": {
+     "alv": -14.5,
+     "tis": -3.3333,
+     "mean": -0.1
+    }
+   },
+   "down": {
+    "alv": "flat",
+    "tis": "down",
+    "mean": "down",
+    "deltas": {
+     "alv": 0,
+     "tis": -22.8333,
+     "mean": -0.12
+    }
+   }
+  },
+  "tissueDemand": {
+   "up": {
+    "alv": "flat",
+    "tis": "down",
+    "mean": "down",
+    "deltas": {
+     "alv": 0,
+     "tis": -6,
+     "mean": -0.04
+    }
+   },
+   "down": {
+    "alv": "flat",
+    "tis": "up",
+    "mean": "up",
+    "deltas": {
+     "alv": 0,
+     "tis": 8,
+     "mean": 0.06
+    }
+   }
+  },
+  "anemia": {
+   "up": {
+    "alv": "flat",
+    "tis": "down",
+    "mean": "down",
+    "deltas": {
+     "alv": 0,
+     "tis": -13,
+     "mean": -0.19
+    }
+   },
+   "down": null
+  },
+  "temperature": {
+   "up": {
+    "alv": "flat",
+    "tis": "down",
+    "mean": "down",
+    "deltas": {
+     "alv": 0,
+     "tis": -3.3333,
+     "mean": -0.02
+    }
+   },
+   "down": {
+    "alv": "flat",
+    "tis": "up",
+    "mean": "up",
+    "deltas": {
+     "alv": 0,
+     "tis": 2,
+     "mean": 0.01
+    }
+   }
+  },
+  "perfusion": {
+   "up": {
+    "alv": "flat",
+    "tis": "flat",
+    "mean": "down",
+    "deltas": {
+     "alv": 0,
+     "tis": 0,
+     "mean": -0.01
+    }
+   },
+   "down": {
+    "alv": "flat",
+    "tis": "flat",
+    "mean": "up",
+    "deltas": {
+     "alv": 0,
+     "tis": 0,
+     "mean": 0.01
+    }
+   }
+  },
+  "altitudeM": {
+   "up": {
+    "alv": "down",
+    "tis": "down",
+    "mean": "down",
+    "deltas": {
+     "alv": -5.8333,
+     "tis": -7,
+     "mean": -0.0967
+    }
+   },
+   "down": null
+  },
+  "fluidRate": {
+   "up": {
+    "alv": "flat",
+    "tis": "flat",
+    "mean": "flat",
+    "deltas": {
+     "alv": 0,
+     "tis": 0,
+     "mean": 0
+    }
+   },
+   "down": null
+  },
+  "infection": {
+   "up": {
+    "alv": "flat",
+    "tis": "flat",
+    "mean": "flat",
+    "deltas": {
+     "alv": 0,
+     "tis": 0,
+     "mean": 0
+    }
+   },
+   "down": null
+  },
+  "glucoseIntake": {
+   "up": {
+    "alv": "flat",
+    "tis": "flat",
+    "mean": "flat",
+    "deltas": {
+     "alv": 0,
+     "tis": 0,
+     "mean": 0
+    }
+   },
+   "down": null
+  }
+ }
+}
