@@ -1,0 +1,213 @@
+{
+ "ranAt": "2026-09-13T03:18:40.933Z",
+ "model": "qwen3.5:9b",
+ "endpoint": "http://127.0.0.1:11434/v1",
+ "n": 5,
+ "pass": 0,
+ "results": [
+  {
+   "n": 1,
+   "verdict": "FAIL",
+   "codes": [
+    "claimed_change_where_none"
+   ],
+   "details": {
+    "alv": "up",
+    "mean": "up"
+   },
+   "action": {
+    "key": "lungSupply",
+    "direction": "up",
+    "from": 0.85,
+    "to": 1,
+    "label": "肺端供氧"
+   },
+   "statement": "我提高了肺端供氧，讓肺泡水位從78%升至100%，平均負載增加",
+   "transcript": [
+    {
+     "turn": 1,
+     "reply": ""
+    },
+    {
+     "turn": 2,
+     "reply": "{\"action\":\"set_condition\",\"condition\":\"肺端供氧\",\"direction\":\"up\"}"
+    },
+    {
+     "turn": 3,
+     "reply": ""
+    },
+    {
+     "turn": 4,
+     "reply": "{\"action\":\"toggle_ab\"}"
+    },
+    {
+     "turn": 5,
+     "reply": "{\"action\":\"set_condition\",\"condition\":\"補水速率\",\"direction\":\"up\"}"
+    },
+    {
+     "turn": 6,
+     "reply": "{\"action\":\"statement\",\"text\":\"我提高了肺端供氧，讓肺泡水位從78%升至100%，平均負載增加\"}"
+    }
+   ],
+   "errors": []
+  },
+  {
+   "n": 2,
+   "verdict": "FAIL",
+   "codes": [
+    "direction_mismatch_action",
+    "claimed_change_where_none",
+    "reversed_or_wrong_effect"
+   ],
+   "details": {
+    "claimed": "up",
+    "applied": "down",
+    "alv": "up",
+    "tis": "claimed_up_expected_down",
+    "mean": "claimed_up_expected_down"
+   },
+   "action": {
+    "key": "lungSupply",
+    "direction": "down",
+    "from": 0.85,
+    "to": 0.55,
+    "label": "肺端供氧"
+   },
+   "statement": "將肺端供氧從0.85降至0.55後，肺泡水位升至84%，組織水位增加到40%，平均負載增加0.15，顯示降低供氧可能導致肺部滲透性與組織液代謝改變",
+   "transcript": [
+    {
+     "turn": 1,
+     "reply": ""
+    },
+    {
+     "turn": 2,
+     "reply": "{\"action\":\"set_condition\",\"condition\":\"肺端供氧\",\"direction\":\"down\"}"
+    },
+    {
+     "turn": 3,
+     "reply": "{\"action\":\"statement\",\"text\":\"將肺端供氧從0.85降至0.55後，肺泡水位升至84%，組織水位增加到40%，平均負載增加0.15，顯示降低供氧可能導致肺部滲透性與組織液代謝改變\"}"
+    }
+   ],
+   "errors": []
+  },
+  {
+   "n": 3,
+   "verdict": "FAIL",
+   "codes": [
+    "no_direction",
+    "claimed_change_where_none",
+    "no_where"
+   ],
+   "details": {
+    "alv": "up",
+    "tis": "up",
+    "mean_clause": "平均負載也从0.41變成0.69"
+   },
+   "action": {
+    "key": "fluidRate",
+    "direction": "up",
+    "from": 0,
+    "to": 0.01,
+    "label": "補水速率"
+   },
+   "statement": "我改高了補水速率，結果肺泡水位從77%漲到100%，組織水位從22%升到45%，平均負載也从0.41變成0.69",
+   "transcript": [
+    {
+     "turn": 1,
+     "reply": ""
+    },
+    {
+     "turn": 2,
+     "reply": "{\"action\":\"set_condition\",\"condition\":\"補水速率\",\"direction\":\"up\"}"
+    },
+    {
+     "turn": 3,
+     "reply": "{\"action\":\"statement\",\"text\":\"我改高了補水速率，結果肺泡水位從77%漲到100%，組織水位從22%升到45%，平均負載也从0.41變成0.69\"}"
+    }
+   ],
+   "errors": []
+  },
+  {
+   "n": 4,
+   "verdict": "FAIL",
+   "codes": [
+    "reversed_or_wrong_effect",
+    "no_where",
+    "no_causal_link"
+   ],
+   "details": {
+    "mean": "claimed_up_expected_down",
+    "tis_clause": "顯示較低的供氧仍讓組織能維持運作"
+   },
+   "action": {
+    "key": "lungSupply",
+    "direction": "down",
+    "from": 0.85,
+    "to": 0.55,
+    "label": "肺端供氧"
+   },
+   "statement": "將肺端供氧降低至0.55後，平均負載從0.41升至0.69，顯示較低的供氧仍讓組織能維持運作",
+   "transcript": [
+    {
+     "turn": 1,
+     "reply": "{\"action\":\"set_condition\",\"condition\":\"肺端供氧\",\"direction\":\"down\"}"
+    },
+    {
+     "turn": 2,
+     "reply": ""
+    },
+    {
+     "turn": 3,
+     "reply": "```json\n{\"action\": \"toggle_ab\"}\n```"
+    },
+    {
+     "turn": 4,
+     "reply": "{\"action\":\"statement\",\"text\":\"將肺端供氧降低至0.55後，平均負載從0.41升至0.69，顯示較低的供氧仍讓組織能維持運作\"}"
+    }
+   ],
+   "errors": []
+  },
+  {
+   "n": 5,
+   "verdict": "FAIL",
+   "codes": [
+    "no_direction",
+    "no_where"
+   ],
+   "details": {
+    "tis_clause": "我提升了組織灌流條件至1.50"
+   },
+   "action": {
+    "key": "perfusion",
+    "direction": "up",
+    "from": 1,
+    "to": 1.5,
+    "label": "組織灌流"
+   },
+   "statement": "我提升了組織灌流條件至1.50，並切換到基線與介入組的比較模式，現在旅程已完成，可檢視事件因果",
+   "transcript": [
+    {
+     "turn": 1,
+     "reply": ""
+    },
+    {
+     "turn": 2,
+     "reply": "```json\n{\"action\":\"set_condition\",\"condition\":\"組織灌流\",\"direction\":\"up\"}\n```"
+    },
+    {
+     "turn": 3,
+     "reply": "{\"action\":\"toggle_ab\"}"
+    },
+    {
+     "turn": 4,
+     "reply": ""
+    },
+    {
+     "turn": 5,
+     "reply": "```json\n{\"action\":\"statement\",\"text\":\"我提升了組織灌流條件至1.50，並切換到基線與介入組的比較模式，現在旅程已完成，可檢視事件因果\"}\n```"
+    }
+   ],
+   "errors": []
+  }
+ ]
+}
