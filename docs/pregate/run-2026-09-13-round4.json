@@ -1,0 +1,156 @@
+{
+ "ranAt": "2026-09-13T04:29:23.503Z",
+ "model": "qwen3.5:35b-a3b",
+ "endpoint": "http://127.0.0.1:11434/v1",
+ "n": 5,
+ "pass": 0,
+ "results": [
+  {
+   "n": 1,
+   "verdict": "FAIL",
+   "codes": [
+    "no_direction",
+    "no_where",
+    "reversed_or_wrong_effect",
+    "claimed_change_where_none"
+   ],
+   "details": {
+    "tis_clause": "將組織需求從0.50上调至0.80",
+    "mean": "claimed_up_expected_down",
+    "alv": "up"
+   },
+   "action": {
+    "key": "tissueDemand",
+    "direction": "up",
+    "from": 0.5,
+    "to": 0.8,
+    "label": "組織需求"
+   },
+   "statement": "將組織需求從0.50上调至0.80，導致平均負載升至0.65，肺泡與組織水位上升",
+   "transcript": [
+    {
+     "turn": 1,
+     "reply": "{\"action\":\"set_condition\",\"condition\":\"组织需求\",\"direction\":\"up\"}"
+    },
+    {
+     "turn": 2,
+     "reply": "{\"action\":\"statement\",\"text\":\"將組織需求從0.50上调至0.80，導致平均負載升至0.65，肺泡與組織水位上升\"}"
+    }
+   ],
+   "errors": [
+    "TypeError: fetch failed",
+    "TypeError: fetch failed"
+   ]
+  },
+  {
+   "n": 2,
+   "verdict": "FAIL",
+   "codes": [
+    "incomplete"
+   ],
+   "note": "未完成（6 回合內未交出一句話）",
+   "action": {
+    "key": "tissueDemand",
+    "direction": "up",
+    "from": 0.5,
+    "to": 0.8,
+    "label": "組織需求"
+   },
+   "transcript": [
+    {
+     "turn": 1,
+     "reply": "{\n\"action\":\"set_condition\",\n\"condition\":\"組織需求\",\n\"direction\":\"up\"\n}"
+    }
+   ],
+   "errors": [
+    "TypeError: fetch failed",
+    "TypeError: fetch failed"
+   ]
+  },
+  {
+   "n": 3,
+   "verdict": "FAIL",
+   "codes": [
+    "claimed_change_where_none"
+   ],
+   "details": {
+    "alv": "up",
+    "mean": "up"
+   },
+   "action": {
+    "key": "lungSupply",
+    "direction": "up",
+    "from": 0.85,
+    "to": 1,
+    "label": "肺端供氧"
+   },
+   "statement": "我將肺端供氧調高至1.00，導致肺泡水位與組織水位上升，平均負載增加。",
+   "transcript": [
+    {
+     "turn": 1,
+     "reply": "```json\n{\n  \"action\": \"set_condition\",\n  \"condition\": \"肺端供氧\",\n  \"direction\": \"up\"\n}\n```"
+    },
+    {
+     "turn": 2,
+     "reply": "```json\n{\n  \"action\": \"statement\",\n  \"text\": \"我將肺端供氧調高至1.00，導致肺泡水位與組織水位上升，平均負載增加。\"\n}\n```"
+    }
+   ],
+   "errors": [
+    "TypeError: fetch failed",
+    "TypeError: fetch failed"
+   ]
+  },
+  {
+   "n": 4,
+   "verdict": "FAIL",
+   "codes": [
+    "no_condition"
+   ],
+   "note": "未改任何條件",
+   "transcript": [],
+   "errors": [
+    "TypeError: fetch failed",
+    "TypeError: fetch failed"
+   ]
+  },
+  {
+   "n": 5,
+   "verdict": "FAIL",
+   "codes": [
+    "no_where",
+    "claimed_change_where_none",
+    "no_causal_link"
+   ],
+   "details": {
+    "tis_clause": "我將組織需求調高",
+    "alv": "up"
+   },
+   "action": {
+    "key": "tissueDemand",
+    "direction": "up",
+    "from": 0.5,
+    "to": 0.8,
+    "label": "組織需求"
+   },
+   "statement": "我將組織需求調高，導致肺泡水位與平均負載增加。",
+   "transcript": [
+    {
+     "turn": 1,
+     "reply": "{\"action\":\"set_condition\",\"condition\":\"組織需求\",\"direction\":\"up\"}"
+    },
+    {
+     "turn": 2,
+     "reply": "{\"action\":\"set_condition\",\"condition\":\"感染嚴重度\",\"direction\":\"up\"}"
+    },
+    {
+     "turn": 3,
+     "reply": "{\"action\":\"statement\",\"text\":\"我將組織需求調高，導致肺泡水位與平均負載增加。\"}"
+    }
+   ],
+   "errors": [
+    "TypeError: fetch failed",
+    "TypeError: fetch failed"
+   ]
+  }
+ ]
+}
