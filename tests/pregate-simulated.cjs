@@ -267,7 +267,7 @@ const LEARNER_SYSTEM = [
 
 function screenText(s) {
   return [
-    'tick=' + s.tick, '分支=' + s.badge,
+    String(s.tick || ''), '分支=' + s.badge,
     '參數面板：', s.panel,
     '肺泡水位=' + s.alv, '組織水位=' + s.tis, '平均負載=' + s.mean,
     '字幕：' + s.subtitle,
@@ -279,8 +279,11 @@ async function snapshot(page) {
     const g = (sel) => { const e = document.querySelector(sel); return e ? e.textContent.trim() : ''; };
     const num = (s) => (Number.isFinite(Number(s)) ? s : s);
     const panel = [...document.querySelectorAll('#paramPanel .prm')].map((row) => row.innerText.replace(/\n+/g, ' ').trim()).join('\n');
+    // 徽章以「參與者實際看得到」為準：display:none 的預設文字不轉述（T-371 面板修正）
+    const bb = document.querySelector('#branchBadge');
+    const badge = bb && bb.offsetParent !== null ? bb.textContent.trim() : '(尚未分支)';
     return {
-      tick: g('#tickN'), badge: g('#branchBadge') || '(尚未分支)', panel,
+      tick: g('#tickN'), badge, panel,
       alv: num(g('#statAlv')), tis: num(g('#statTis')), mean: num(g('#statMean')),
       subtitle: g('#subtitle'),
     };
@@ -460,6 +463,115 @@ async function runLearner(browser, base, config, n) {
       return;
     }
 
+    /* --panel：人類信差模式面板（T-371）——Prompt A 前畫面＋15 組改後 A/B 對照塊（全對凍結模型實測，時窗/種子同 learner） */
+    if (argv.includes('--panel')) {
+      const outArg = argv[argv.indexOf('--panel') + 1];
+      const outFile = outArg && !outArg.startsWith('--') ? outArg : path.join(root, 'docs', 'pregate', 'PANEL-2026-09-13.md');
+      const page = await freshRun(browser, base);
+      await waitTicks(page, WATCH_TICKS);
+      const before = await snapshot(page);
+      const blocks = [];
+      let bid = 0;
+      for (const [key, c] of Object.entries(CONDS)) {
+        for (const dir of ['up', 'down']) {
+          const spec = c[dir];
+          if (!spec) continue;
+          bid += 1;
+          await freshRun(browser, base, page);
+          await waitTicks(page, WATCH_TICKS);
+          await setCondition(page, key, spec.to);
+          await waitTicks(page, SETTLE_TICKS + WINDOW_TICKS);
+          const bSide = await snapshot(page);
+          await page.locator('#abToggle').click();
+          await page.waitForTimeout(800);
+          const aSide = await snapshot(page);
+          blocks.push({ id: 'B' + bid, key, label: c.label, dir, spec, bSide, aSide });
+          console.log('block ' + blocks[blocks.length - 1].id + ': ' + c.label + ' ' + dir);
+        }
+      }
+      const L = [];
+      L.push('# 模擬預檢門·五頂級模型面板（人類信差模式）');
+      L.push('');
+      L.push('EC T-371（人類 2026-09-13「你可以給我一個prompt 我下五次」）。所有畫面由 `tests/pregate-simulated.cjs --panel` 對凍結模型實測（產品 commit ' + 'fc610748'.slice(0,8) + ' 系列、seed 7、觀看期 ' + WATCH_TICKS + ' tick、settle+窗 ' + (SETTLE_TICKS + WINDOW_TICKS) + ' tick——與四輪正式紀錄完全一致）。');
+      L.push('');
+      L.push('**定位（不可刪）**：這是模擬預檢的診斷面板，不是五人門；結果不支撐學習成效宣稱。與互動版的偏差：① 兩段式——改後畫面由預先實測的對應塊提供（決定性種子下與 live 觀察同內容）；② A/B 兩側讀數同時提供（不保留「選擇不看」權）；③ toggle_ab 非法動作以 nudge 處理；④ 觀察層修正——畫面轉述不再含 display:none 的隱藏徽章預設文字（參與者實際看不到），tick 冒號重複已除。量尺（v1.3 `scoreStatement`）零修訂。');
+      L.push('');
+      L.push('## 使用流程（每個模型一遍，各自開全新對話）');
+      L.push('');
+      L.push('1. 把下方「Prompt A」整段貼給模型。');
+      L.push('2. 模型應回一個 `{"action":"set_condition",...}` JSON。照「判位表」找出對應畫面塊，把「塊內全文」貼回去。');
+      L.push('   - 回的不是合法 JSON → 貼 NUDGE-GARBAGE（僅一次）；條件或方向不存在（或回 toggle_ab）→ 貼 NUDGE-ACTION（僅一次）；再犯 → 記「未完成」，停止。');
+      L.push('   - 模型一次回多個動作 → 只取第一個 set_condition。');
+      L.push('3. 模型的最後一句話（statement 的 text）＋它選的動作，填進「回收清單」帶回給執行者評分。');
+      L.push('');
+      L.push('## Prompt A（整段貼）');
+      L.push('');
+      L.push('```');
+      L.push('你是一位參與者，第一次使用一個互動網頁。主持人只會念一次指示，之後不會再幫你、不會回答問題。');
+      L.push('你看不到網站的程式碼，只能看到畫面文字轉述。');
+      L.push('');
+      L.push('主持人說：');
+      L.push('1. 打開網址（本機 http://127.0.0.1:8642/ 或 loop.html）。');
+      L.push('2. 按「跟著一顆紅血球」，看它走一圈。');
+      L.push('3. 自己改一個條件。');
+      L.push('4. 看兩邊差在哪，用一句話說「你改了什麼、什麼變了」。');
+      L.push('');
+      L.push('你已打開網頁、按了「跟著一顆紅血球」，並看了一會兒。當前【畫面】：');
+      L.push(screenText(before));
+      L.push('');
+      L.push('這個版本的操作：看過畫面後，直接選「一個」條件調整（「條件」指參數面板的滑桿；藥物按鈕不是條件），嚴格輸出一個 JSON 物件、不要其他文字：');
+      L.push('{"action":"set_condition","condition":"<畫面上的條件標籤原文>","direction":"up 或 down"}');
+      L.push('');
+      L.push('你送出後會收到調整後的【畫面】（含基線 A 側與介入 B 側讀數），屆時請用一句話完成主持人的第 4 步。');
+      L.push('```');
+      L.push('');
+      L.push('## 判位表（照模型回的 JSON 找塊）');
+      L.push('');
+      L.push('| 模型回的 condition | direction | 貼的塊 |');
+      L.push('|---|---|---|');
+      for (const b of blocks) L.push('| ' + b.label + ' | ' + (b.dir === 'up' ? 'up（拉高）' : 'down（調低）') + ' | ' + b.id + ' |');
+      L.push('');
+      L.push('## NUDGE-GARBAGE（回的不是合法 JSON 時貼，僅一次）');
+      L.push('');
+      L.push('```');
+      L.push('（無法辨識，請只輸出一個 JSON 動作物件）');
+      L.push('```');
+      L.push('');
+      L.push('## NUDGE-ACTION（條件／方向不存在，或回了 toggle_ab 時貼，僅一次）');
+      L.push('');
+      L.push('```');
+      L.push('（該條件或方向不可用；「條件」指參數面板的滑桿。請只輸出一個 set_condition JSON。）');
+      L.push('```');
+      L.push('');
+      for (const b of blocks) {
+        L.push('## 畫面塊 ' + b.id + '：' + b.label + ' ' + (b.dir === 'up' ? '拉高' : '調低') + '（' + b.spec.from + '→' + b.spec.to + '）');
+        L.push('');
+        L.push('```');
+        L.push('【畫面 · 調整後（B 側）】');
+        L.push(screenText(b.bSide));
+        L.push('');
+        L.push('【畫面 · 你按了「▶ 切到 A（基線）」之後（A 側）】');
+        L.push(screenText(b.aSide));
+        L.push('');
+        L.push('最後，請用一句話完成主持人的第 4 步。嚴格輸出一個 JSON 物件、不要其他文字：');
+        L.push('{"action":"statement","text":"<一句話：你改了什麼、什麼變了>"}');
+        L.push('```');
+        L.push('');
+      }
+      L.push('## 回收清單（帶回給執行者）');
+      L.push('');
+      L.push('| 模型名稱 | 它選的條件＋方向 | 最後一句話（statement 原文） | 備註（nudge 幾次／未完成） |');
+      L.push('|---|---|---|---|');
+      L.push('|  |  |  |  |');
+      L.push('|  |  |  |  |');
+      L.push('|  |  |  |  |');
+      L.push('|  |  |  |  |');
+      L.push('|  |  |  |  |');
+      fs.writeFileSync(outFile, L.join('\n') + '\n');
+      console.log('written: ' + outFile + ' (blocks=' + blocks.length + ')');
+      return;
+    }
+
     /* --learner：LLM 模擬受試者 */
     if (argv.includes('--learner')) {
       const ci = argv.indexOf('--config');
@@ -482,7 +594,7 @@ async function runLearner(browser, base, config, n) {
       return;
     }
 
-    console.log('用法：--selftest | --smoke | --calibrate [outfile] | --learner --config F [--n 5] [--out F]');
+    console.log('用法：--selftest | --smoke | --calibrate [outfile] | --panel [outfile] | --learner --config F [--n 5] [--out F]');
   } finally {
     if (browser) await browser.close();
     srv.close();
