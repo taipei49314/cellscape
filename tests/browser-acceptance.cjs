@@ -61,8 +61,17 @@ const check = (name, pass, detail) => {
 
   await page.getByRole('button', { name: /跟著一顆紅血球|Follow a red blood cell/ }).click();
   await page.waitForTimeout(1200);
-  check('follow-starts-inspector', (await page.locator('#atlasBody').count()) === 1
-    && /紅血球|Red Blood Cell/.test(await page.locator('#atlasBody').innerText()));
+  check('follow-cinema-hides-lab', await page.evaluate(() => {
+    const ins = document.getElementById('inspector');
+    const drugs = document.getElementById('drugPanel');
+    const exportBtn = document.getElementById('btnExport');
+    const st = drugs ? getComputedStyle(drugs) : { display: 'none' };
+    const ex = exportBtn ? getComputedStyle(exportBtn) : { display: 'none' };
+    return document.body.classList.contains('mode-tour')
+      && ins && ins.classList.contains('closed')
+      && (st.display === 'none' || st.visibility === 'hidden')
+      && (ex.display === 'none' || ex.visibility === 'hidden');
+  }));
   check('param-panel-yields-on-follow', await page.locator('#paramPanel').evaluate((el) => {
     const st = getComputedStyle(el);
     return el.classList.contains('closed') || st.pointerEvents === 'none' || st.visibility === 'hidden';
@@ -77,7 +86,9 @@ const check = (name, pass, detail) => {
   const t2 = await page.evaluate(() => document.body.innerText.match(/tick (\d+)/) ? Number(document.body.innerText.match(/tick (\d+)/)[1]) : 0);
   check('model-advances', t2 > t1, `tick ${t1} -> ${t2}`);
 
-  /* 搜尋：EN 別名可命中 */
+  /* 搜尋：先打開檢閱（電影模式預設關），EN 別名可命中 */
+  await page.locator('#insToggle').click();
+  await page.waitForTimeout(400);
   await page.locator('#atlasSearch').fill('RBC');
   await page.waitForTimeout(600);
   const hits = await page.locator('#atlasBody').innerText();
@@ -139,9 +150,10 @@ const check = (name, pass, detail) => {
     && /loop\.html/.test(ctaHref), ctaText + ' ' + ctaHref);
   check('index-no-errors', pageErrors.length === 0, pageErrors.join(' | '));
   await cta.click();
-  await page.waitForSelector('#followBtn, #inspector', { timeout: 10000 });
+  await page.waitForSelector('#r3d, #followBtn', { timeout: 10000 });
+  await page.waitForTimeout(1500);
   check('index-cta-opens-atlas', /loop\.html/.test(page.url())
-    && ((await page.locator('#followBtn').count()) + (await page.locator('#inspector:not(.closed)').count())) >= 1,
+    && (await page.evaluate(() => !!(window.CSL && CSL.Main && (CSL.Main.followedId != null || document.body.classList.contains('mode-tour'))))),
     page.url());
 
   /* ---------- museum.html（舊八景仍在，且不是 Atlas 登陸卡） ---------- */

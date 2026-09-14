@@ -92,6 +92,21 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 #subtitle.show{opacity:1;transform:translateY(0)}
 #controls2{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;pointer-events:auto}
 
+/* T-381：跟隨／導覽＝電影；實驗台留到探索模式 */
+body.mode-tour #learnBtn,
+body.mode-tour #drugPanel,
+body.mode-tour #camOverview,
+body.mode-tour #camLung,
+body.mode-tour #camTissue,
+body.mode-tour #evidenceToggle,
+body.mode-tour #btnExport,
+body.mode-tour #langToggle,
+body.mode-tour .btn2.file,
+body.mode-tour a.museum,
+body.mode-tour #perfBadge,
+body.mode-tour #tourNav{display:none !important}
+body.mode-tour #subtitle{font-size:18px;min-height:52px;padding:0 12vw;letter-spacing:.04em}
+
 /* 落地頁 */
 #landing{position:fixed;inset:0;z-index:30;display:flex;align-items:center;justify-content:center;
   background:radial-gradient(ellipse at center,rgba(5,8,15,.25),rgba(5,8,15,.88));
