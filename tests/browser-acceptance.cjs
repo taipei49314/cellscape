@@ -52,6 +52,12 @@ const check = (name, pass, detail) => {
   await page.waitForTimeout(1200);
   check('follow-starts-inspector', (await page.locator('#atlasBody').count()) === 1
     && /紅血球|Red Blood Cell/.test(await page.locator('#atlasBody').innerText()));
+  check('param-panel-yields-on-follow', await page.locator('#paramPanel').evaluate((el) => {
+    const st = getComputedStyle(el);
+    return el.classList.contains('closed') || st.pointerEvents === 'none' || st.visibility === 'hidden';
+  }));
+  check('stock-hud-visible', await page.locator('#stockHud').isVisible()
+    && /%/.test(await page.locator('#statAlv').innerText()));
   check('anemia-slider-present', (await page.locator('#paramPanel input[data-key=anemia]').count()) === 1);
 
   const tick = () => page.evaluate(() => Number((/tick (\d+)/.exec(document.querySelector('#perfBadge') ? document.body.innerText : '') || [])[1] || 0));
@@ -73,6 +79,19 @@ const check = (name, pass, detail) => {
      pageerror 監聽看不到，這裡直接讀。 */
   check('loop-no-swallowed-errors', ((await page.evaluate(() => (window.__loopErrors || []).slice())) || []).length === 0,
     JSON.stringify(await page.evaluate(() => (window.__loopErrors || []).slice())));
+
+  /* T-379：切探索後開參數、拉低肺端供氧，A 基線滑桿須顯示基線而非介入值 */
+  await page.locator('#exploreBtn').click();
+  await page.locator('#paramToggle').click();
+  await page.waitForTimeout(400);
+  await page.locator('#paramPanel input[data-key=lungSupply]').fill('0.25');
+  await page.waitForTimeout(500);
+  await page.locator('#abToggle').click();
+  await page.waitForTimeout(400);
+  const aLung = await page.locator('#paramPanel input[data-key=lungSupply]').inputValue();
+  check('ab-slider-follows-displayed-branch', Number(aLung) >= 0.8, 'A lungSupply=' + aLung);
+  await page.locator('#abToggle').click();
+  await page.waitForTimeout(300);
 
   /* EN 切換：殼層字串換成英文，且切回不留殘留 */
   await page.locator('#langToggle').click();

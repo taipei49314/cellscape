@@ -67,8 +67,8 @@
   </div>
 </div>
 
-<div id="paramPanel" class="panel2">
-  <div class="ph" data-i18n="params.title">模型參數（探索模式可調）</div>
+<div id="paramPanel" class="panel2 closed">
+  <div class="ph"><span data-i18n="params.title">模型參數（探索模式可調）</span><button id="paramClose" class="x">×</button></div>
   <div class="prm"><label><span data-i18n="params.lung">肺端供氧</span> <b id="pv_lungSupply" class="mono">0.85</b></label>
     <input type="range" data-key="lungSupply" min="0" max="1" step="0.01" value="0.85"></div>
   <div class="prm"><label><span data-i18n="params.flow">循環流速</span> <b id="pv_flowSpeed" class="mono">1.00</b></label>
@@ -89,10 +89,6 @@
     <input type="range" data-key="infection" min="0" max="1" step="0.05" value="0"></div>
   <div class="prm"><label><span data-i18n="params.glucoseIntake">碳水攝入速率</span> <b id="pv_glucoseIntake" class="mono">0.000</b></label>
     <input type="range" data-key="glucoseIntake" min="0" max="0.02" step="0.001" value="0"></div>
-  <div class="prm stat"><i>肺泡水位</i><b id="statAlv" class="mono">—</b>
-    <i>組織水位</i><b id="statTis" class="mono">—</b>
-    <i>平均負載</i><b id="statMean" class="mono">—</b></div>
-  <div class="meter wide"><span id="tisBar"></span></div>
   <div class="prm drugs" id="drugPanel">
     <label data-i18n="drug.label">藥物介入（模型預設，非用藥建議）</label>
     <div class="drugRow">
@@ -115,8 +111,15 @@
 
 <div id="bottombar2">
   <div id="subtitle"></div>
+  <div id="stockHud">
+    <span><i>肺泡水位</i><b id="statAlv" class="mono">—</b></span>
+    <span><i>組織水位</i><b id="statTis" class="mono">—</b></span>
+    <span><i>平均負載</i><b id="statMean" class="mono">—</b></span>
+    <div class="meter wide"><span id="tisBar"></span></div>
+  </div>
   <div id="controls2">
     <button id="abToggle" class="btn2" style="display:none">▶ 切到 A（基線）</button>
+    <button id="paramToggle" class="btn2 tiny">參數</button>
     <button id="exploreBtn" class="btn2" data-i18n="view.explore">自由探索</button>
     <button id="camOverview" class="btn2 tiny" data-i18n="view.overview">循環總覽</button>
     <button id="camLung" class="btn2 tiny" data-i18n="view.lung">肺微環境</button>
