@@ -151,6 +151,8 @@
       /* 切換鈕只在分支存在時可見——匯入/無分支時不得殘留無效控制項 */
       $('abToggle').style.display = this.branchA ? 'inline-block' : 'none';
       $('abToggle').textContent = this.activeIsA ? '▶ 切到 B（介入中）' : '▶ 切到 A（基線）';
+      const hint = $('stockHint');
+      if (hint) hint.hidden = !this.branchA;
     },
 
     /* ---------- UI ---------- */
