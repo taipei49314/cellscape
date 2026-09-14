@@ -593,6 +593,29 @@ const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^
       && r.stopped && r.hasNavApi && r.subs > 0, JSON.stringify(r));
 }
 
+/* 23b T-380：低負載離肺不得卡在第 1 步；字幕須跟上組織位置 */
+{
+  const r = run(`(()=>{
+    const w = CSL.createWorld({ seed: 380 });
+    const subs = [];
+    const api = { subtitle: (t) => { if (t) subs.push(String(t)); }, setCamera: () => {},
+                  enableBranch: () => {}, tourDone: () => {} };
+    const id = 1;
+    const lung = CSL.EDGES.findIndex((e) => e.id === 'LUNG_CAP');
+    const tissue = CSL.EDGES.findIndex((e) => e.id === 'TISSUE_CAP');
+    w.entities[id].edge = lung; w.entities[id].s = 0.1; w.entities[id].load = 0.3;
+    CSL.Tour.start(w, api, id);
+    for (let i = 0; i < 5; i++) CSL.Tour.update(w, api);
+    w.entities[id].edge = tissue; w.entities[id].s = 0.2; w.entities[id].load = 0.22;
+    for (let i = 0; i < 8; i++) CSL.Tour.update(w, api);
+    const last = subs.filter(Boolean).pop() || '';
+    return { idx: CSL.Tour.idx, last, nSubs: subs.length,
+             lungStuck: CSL.Tour.idx <= 1 };
+  })()`);
+  check('tour-subtitle-follows-left-lung',
+    r.idx >= 3 && /組織/.test(r.last) && !r.lungStuck, JSON.stringify(r));
+}
+
 /* 24. F2 拓樸雙床血流再分配（0.7.0）：EDGES 含 primary+secondary tissue site；
        perfusion=1 時次床權重為 0（＝0.6.0 單床）；perfusion=0.4 時次床有卸載。 */
 {
