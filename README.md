@@ -4,9 +4,9 @@
 
 產品 **0.6.0**。簡化供氧模型；內部數值是模型單位，不是 SpO₂，也不是臨床指標。
 
-**[打開線上圖譜](https://taipei49314.github.io/cellscape/)** · 不用安裝，按「跟著一顆紅血球」。
+**[打開線上圖譜](https://taipei49314.github.io/cellscape/)** · 不用安裝。第一屏是細胞內部示意海報；再按「跟著一顆紅血球」進入供氧循環。
 
-![Living Atlas 登陸](docs/screenshots/11-loop-landing.png)
+![品牌登陸](docs/screenshots/18-hero-landing.png)
 
 ## 八分鐘
 
@@ -27,9 +27,9 @@ Windows：雙擊 `start.bat`（或 `.\start.ps1`）。其他環境：
 python -m http.server 8642 --bind 127.0.0.1
 ```
 
-然後打開 [http://127.0.0.1:8642/loop.html](http://127.0.0.1:8642/loop.html)。無建置步驟；Three.js 已隨附。
+然後打開 [http://127.0.0.1:8642/](http://127.0.0.1:8642/)。無建置步驟；Three.js 已隨附。
 
-根路徑 `/` 進入 Living Atlas。舊的八個 Canvas 場景在 [museum.html](museum.html)，與這個世界**不共用模擬狀態**。
+根路徑 `/` 是品牌登陸（示意海報）。[loop.html](loop.html) 是 Living Atlas。舊的八個 Canvas 場景在 [museum.html](museum.html)，與這個世界**不共用模擬狀態**。
 
 ## 這不是什麼
 
@@ -43,7 +43,7 @@ python -m http.server 8642 --bind 127.0.0.1
 npm test
 ```
 
-隨包 47 項 scoped check。瀏覽器驗收由 CI 跑，不是實機或跨瀏覽器成績。生物學有效不在這份檢查裡。
+隨包 66 項 scoped check（原 60 ＋登陸 6）。瀏覽器驗收由 CI 跑，不是實機或跨瀏覽器成績。生物學有效不在這份檢查裡。
 
 模型單位與已知限制：[docs/LOOP-NOTES.md](docs/LOOP-NOTES.md)。
 
