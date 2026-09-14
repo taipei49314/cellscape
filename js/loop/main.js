@@ -108,13 +108,15 @@
       this.setMode('tour');
       CSL.Tour.start(this.world, this.api, best.id);
       CSL.Render.setView('FOLLOW', this.world, best.id);   // 跟隨視角由 UI/導覽觸發
-      this._inspector(true);
+      this._inspector(false);  // T-381：跟隨時不攤檢閱，世界佔滿
       if (this._syncTourNav) this._syncTourNav();
     },
 
     setMode(m) {
       this.mode = m;
       $('modeBadge').textContent = m === 'tour' ? '導覽' : '探索';
+      document.body.classList.toggle('mode-tour', m === 'tour');
+      document.body.classList.toggle('mode-explore', m === 'explore');
       if (m === 'explore') CSL.Tour.stop();
       this._setParamEditable();
       $('exploreBtn').classList.toggle('on', m === 'explore');
