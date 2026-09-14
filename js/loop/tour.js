@@ -102,11 +102,15 @@
           onEnter: (w) => {},
           sayOnMeet: () => T('s0.meet', { id }) || `紅血球 #${id} 進入肺微血管——氧從肺泡側裝載（通量 = 係數 × 驅動量 × 可用容量）。`,
         },
-        { // 1 — 負載上升
+        { // 1 — 負載上升（球已離肺則不再死等 load>0.7，否則字幕停在肺裝載句）
           cam: null,
-          until: (w) => has(w) && w.entities[id].load > 0.7,
+          until: (w) => has(w) && (w.entities[id].load > 0.7 || w.entities[id].edge !== EDGE.LUNG_CAP),
           maxTicks: 2700,
-          sayOnMeet: () => T('s1.meet') || `氧負載上升（模型欄位 load）——外觀色調隨負載變化，這是模型欄位的視覺映射。`,
+          sayOnMeet: () => {
+            const e = has(this.world) && this.world.entities[id];
+            if (e && e.load > 0.7) return T('s1.meet') || `氧負載上升（模型欄位 load）——外觀色調隨負載變化，這是模型欄位的視覺映射。`;
+            return null;
+          },
         },
         { // 2 — 離開肺
           cam: 'OVERVIEW',
@@ -116,7 +120,7 @@
         },
         { // 3 — 抵達組織
           cam: 'TISSUE',
-          until: (w) => has(w) && w.entities[id].edge === EDGE.TISSUE_CAP,
+          until: (w) => has(w) && (w.entities[id].edge === EDGE.TISSUE_CAP || w.entities[id].edge === EDGE.TISSUE_CAP_2),
           maxTicks: 7200,
           sayOnMeet: () => T('s3.meet') || `抵達組織微血管——氧卸載到組織庫存；組織細胞依需求參數取用（色階 = 組織氧庫存水位，模型欄位）。`,
         },
@@ -164,31 +168,32 @@
 
     update(world, api) {
       if (!this.active) return;
-      const st = this.steps[this.idx];
-      if (!st) { this.active = false; return; }
-      this.waited++;
-      if (st.until(world)) {
-        if (st.sayOnMeet) api.subtitle(st.sayOnMeet(this.world), 4.5);
-        if (st.ends) { this.active = false; api.tourDone(); return; }
+      /* 同一 tick 可連續跨過「until 已成立」的觀察步，讓字幕跟上已發生的位置；
+         帶 onEnter 的介入步（降供氧／恢復）不連跳，避免提前改模型。 */
+      let guard = 0;
+      while (this.active && guard++ < 8) {
+        const st = this.steps[this.idx];
+        if (!st) { this.active = false; return; }
+        this.waited++;
+        const met = st.until(world);
+        const timedOut = this.waited > st.maxTicks;
+        if (!met && !timedOut) return;
+        if (met) {
+          if (st.sayOnMeet) {
+            const msg = st.sayOnMeet(this.world);
+            if (msg) api.subtitle(msg, 4.5);
+          }
+          if (st.ends) { this.active = false; api.tourDone(); return; }
+        } else {
+          if (st.ends) { this.active = false; api.tourDone(); return; }
+          api.subtitle(T('timeout') || '（等待逾時，跳到下一步——模型尚未出現該事件。）', 4);
+        }
         this.idx++; this.waited = 0;
         const nxt = this.steps[this.idx];
-        if (nxt) {
-          if (nxt.cam) api.setCamera(nxt.cam);
-          if (nxt.onEnter) nxt.onEnter(world, api);
-          else if (nxt.say) api.subtitle(nxt.say(), 4.5);
-          this.waited = 0;
-        }
-      } else if (this.waited > st.maxTicks) {
-        // 逾時保底：跳過（導覽敘事不得虛構未發生的事件）
-        this.idx++; this.waited = 0;
-        if (st.ends) { this.active = false; api.tourDone(); return; }  // 結尾步逾時也要正常收幕
-        if (st.sayOnMeet) api.subtitle(T('timeout') || '（等待逾時，跳到下一步——模型尚未出現該事件。）', 4);
-        const nxt = this.steps[this.idx];
-        if (nxt) {
-          if (nxt.cam) api.setCamera(nxt.cam);
-          if (nxt.onEnter) nxt.onEnter(world, api);
-          else if (nxt.say) api.subtitle(nxt.say(), 4.5);
-        }
+        if (!nxt) { this.active = false; return; }
+        if (nxt.cam) api.setCamera(nxt.cam);
+        if (nxt.onEnter) { nxt.onEnter(world, api); return; }
+        if (nxt.say) api.subtitle(nxt.say(), 4.5);
       }
     },
   };

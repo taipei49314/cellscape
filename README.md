@@ -43,7 +43,7 @@ python -m http.server 8642 --bind 127.0.0.1
 npm test
 ```
 
-隨包 66 項 scoped check（原 60 ＋登陸 6）。瀏覽器驗收由 CI 跑，不是實機或跨瀏覽器成績。生物學有效不在這份檢查裡。
+隨包 67 項 scoped check（原 60 ＋登陸 6＋導覽字幕 1）。瀏覽器驗收由 CI 跑，不是實機或跨瀏覽器成績。生物學有效不在這份檢查裡。
 
 模型單位與已知限制：[docs/LOOP-NOTES.md](docs/LOOP-NOTES.md)。
 
