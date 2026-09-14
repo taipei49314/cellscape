@@ -42,7 +42,18 @@ const check = (name, pass, detail) => {
   });
 
   /* ---------- loop.html ---------- */
-  await page.goto(BASE + '/loop.html');
+  let lastGoto;
+  for (let i = 0; i < 8; i++) {
+    try {
+      await page.goto(BASE + '/loop.html', { waitUntil: 'domcontentloaded', timeout: 8000 });
+      lastGoto = null;
+      break;
+    } catch (e) {
+      lastGoto = e;
+      await page.waitForTimeout(500);
+    }
+  }
+  if (lastGoto) throw lastGoto;
   await page.waitForLoadState('domcontentloaded');
   await page.waitForTimeout(2500);
   check('loop-loads', /CELLSCAPE/i.test(await page.title()), await page.title());

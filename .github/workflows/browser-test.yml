@@ -35,9 +35,20 @@ jobs:
       - name: Start static server (port 8643)
         shell: powershell
         run: |
-          $p = Start-Process -FilePath python -ArgumentList '-m','http.server','8643','--bind','127.0.0.1' -WorkingDirectory $env:GITHUB_WORKSPACE -WindowStyle Hidden -PassThru
+          $py = (Get-Command python -ErrorAction Stop).Source
+          $p = Start-Process -FilePath $py -ArgumentList '-m','http.server','8643','--bind','127.0.0.1' -WorkingDirectory $env:GITHUB_WORKSPACE -WindowStyle Hidden -PassThru
           $p.Id | Out-File -Encoding ascii "$env:GITHUB_WORKSPACE\.server.pid"
-          Start-Sleep -Seconds 2
+          $ok = $false
+          for ($i = 0; $i -lt 40; $i++) {
+            try {
+              $c = New-Object System.Net.Sockets.TcpClient
+              $c.Connect('127.0.0.1', 8643)
+              $c.Close()
+              $ok = $true
+              break
+            } catch { Start-Sleep -Milliseconds 250 }
+          }
+          if (-not $ok) { throw "static server did not bind 127.0.0.1:8643 (python=$py pid=$($p.Id))" }
 
       - name: Browser acceptance (README walkthrough assertions)
         shell: cmd
