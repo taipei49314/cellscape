@@ -261,6 +261,7 @@
           this.api.subtitle((CSL.I18n && CSL.I18n.shell(noteKey)) || preset.note, 6);
         });
       });
+      $('evAll').addEventListener('change', () => this._tickUI(true));
       $('lowLoad').addEventListener('change', (e) => CSL.Render.setQuality(e.target.checked ? 'low' : 'high'));
       $('reduced').addEventListener('change', (e) => this._setReduced(e.target.checked));
       /* T-299 C3：語言切換（content-en 平行層；缺鍵退回繁中；tour 字幕屬凍結檔維持繁中） */
@@ -392,7 +393,12 @@
          EVENT_CHAIN_OVERWRITTEN 契約）；否則渲染例行清單 */
       if (this._expandedEventId != null) { this._renderChain(this._expandedEventId); return; }
       const evList = $('eventList');
-      const rows = view.events.slice(-9).reverse().map((ev) => {
+      const shown = this._panelEvents(view);
+      if (!shown.length) {
+        evList.innerHTML = '<div class="ev dim">尚無介入紀錄。改一個參數或等導覽介入後，會出現在這裡。</div>';
+        return;
+      }
+      const rows = shown.slice(-9).reverse().map((ev) => {
         const src = { user: '使用者', tour: '導覽', rule: '規則', demo: '示範' }[ev.source] || esc(ev.source);
         let text = '';
         if (ev.kind === 'command') text = (ev.after && ev.after.key != null)
@@ -436,6 +442,16 @@
           else text = esc(ev.ruleId || ev.kind);
           return `<div class="ev chain"><span class="tick mono">t${ev.tick}</span> <b>${text}</b><span class="src">${src}</span></div>`;
         }).join('') + '<div class="ev dim" data-collapse="1" style="cursor:pointer">— 點此收合因果鏈（程式內來源證明，非自然界因果）—</div>';
+    },
+    _panelEvents(view) {
+      /* T-383：預設藏起 handoff 流水；只留介入（user／tour／demo command）與閾值／系統事件。 */
+      const all = !!( $('evAll') && $('evAll').checked );
+      return view.events.filter((ev) => {
+        if (all) return true;
+        if (ev.kind === 'handoff') return false;
+        if (ev.kind === 'command') return ev.source === 'user' || ev.source === 'tour' || ev.source === 'demo';
+        return ev.kind === 'threshold' || ev.kind === 'system';
+      });
     },
     _viewWorld() {
       return this.activeIsA && this.branchA ? this.branchA : this.world;

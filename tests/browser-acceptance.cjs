@@ -108,6 +108,15 @@ const check = (name, pass, detail) => {
   await page.waitForTimeout(400);
   await page.locator('#paramPanel input[data-key=lungSupply]').fill('0.25');
   await page.waitForTimeout(500);
+  await page.locator('#evidenceToggle').click();
+  await page.waitForTimeout(400);
+  const evText = await page.locator('#eventList').innerText();
+  check('events-hide-handoffs-by-default', !/抵達/.test(evText) && /lungSupply|參數/.test(evText),
+    evText.replace(/\s+/g, ' ').slice(0, 240));
+  await page.locator('#evAll').check();
+  await page.waitForTimeout(300);
+  const evAll = await page.locator('#eventList').innerText();
+  check('events-all-shows-handoffs', /抵達/.test(evAll), evAll.replace(/\s+/g, ' ').slice(0, 160));
   await page.locator('#abToggle').click();
   await page.waitForTimeout(400);
   const aLung = await page.locator('#paramPanel input[data-key=lungSupply]').inputValue();
