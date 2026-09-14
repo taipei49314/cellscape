@@ -95,12 +95,24 @@ const check = (name, pass, detail) => {
   await page.waitForTimeout(600);
   check('export-path-fires', (await page.evaluate(() => window.__exp)) >= 1);
 
-  /* ---------- index.html（根入口須進 Living Atlas，不是舊八景） ---------- */
+  /* ---------- index.html（T-378：根入口是品牌登陸，不是舊八景、也不再靜默轉址） ---------- */
+  pageErrors.length = 0;
   await page.goto(BASE + '/index.html');
-  await page.waitForSelector('#followBtn', { timeout: 10000 });
-  const rootFollow = ((await page.locator('#followBtn').innerText()) || '');
-  check('index-enters-atlas', /跟著一顆紅血球|Follow a red blood cell/.test(rootFollow), rootFollow);
+  await page.waitForSelector('#heroImg', { timeout: 10000 });
+  await page.waitForSelector('[data-organ]', { timeout: 10000 });
+  check('index-is-hero', (await page.locator('#heroImg').count()) === 1
+    && (await page.locator('[data-organ]').count()) === 6);
+  const cta = page.locator('a.cta');
+  const ctaText = ((await cta.innerText()) || '');
+  const ctaHref = (await cta.getAttribute('href')) || '';
+  check('index-cta-to-atlas', /跟著一顆紅血球|Follow a red blood cell/.test(ctaText)
+    && /loop\.html/.test(ctaHref), ctaText + ' ' + ctaHref);
   check('index-no-errors', pageErrors.length === 0, pageErrors.join(' | '));
+  await cta.click();
+  await page.waitForSelector('#followBtn, #inspector', { timeout: 10000 });
+  check('index-cta-opens-atlas', /loop\.html/.test(page.url())
+    && ((await page.locator('#followBtn').count()) + (await page.locator('#inspector:not(.closed)').count())) >= 1,
+    page.url());
 
   /* ---------- museum.html（舊八景仍在，且不是 Atlas 登陸卡） ---------- */
   await page.goto(BASE + '/museum.html');

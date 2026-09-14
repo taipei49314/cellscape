@@ -87,6 +87,8 @@
         requestAnimationFrame(loop);
       };
       requestAnimationFrame(loop);
+      /* T-378：品牌登陸 CTA 帶 ?follow=1，進 Atlas 後直接跟隨。未提供則行為不變。 */
+      if (url.searchParams.get('follow') === '1') this.followNextRBC();
     },
 
     /* ---------- 主動作：跟著一顆紅血球 ---------- */

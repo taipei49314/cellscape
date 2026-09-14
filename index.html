@@ -3,17 +3,29 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CELLSCAPE · Living Atlas</title>
-<script>
-(function () {
-  var q = location.search || '';
-  var h = location.hash || '';
-  location.replace('loop.html' + q + h);
-})();
-</script>
+<title>CELLSCAPE · Explore Life Inside</title>
+<link rel="stylesheet" href="css/hero.css">
 </head>
 <body>
-<p><a href="loop.html">CELLSCAPE Living Atlas</a></p>
-<p><a href="museum.html">舊場景（獨立，不連動）</a></p>
+<main id="hero">
+  <img id="heroImg" src="assets/hero-cellscape.jpg" alt="真核細胞內部示意：核、粒線體、內質網、高爾基體、囊泡與骨架。非分子模擬。">
+  <header class="brand">
+    <p class="name">Cellscape</p>
+    <p class="line">Explore Life Inside</p>
+  </header>
+  <div id="hotspots" hidden></div>
+  <aside id="card" class="hidden" aria-live="polite"></aside>
+  <footer class="dock">
+    <div id="chips" class="chips"></div>
+    <a class="cta" href="loop.html?follow=1">◎ 跟著一顆紅血球</a>
+    <p class="legal">示意畫面，不是分子模擬，也不是臨床模型。供氧循環是下一層；內部數值為模型單位，非 SpO₂。</p>
+    <a class="quiet" href="museum.html">舊場景（獨立，不連動）</a>
+  </footer>
+</main>
+<noscript>
+  <p><a href="loop.html">CELLSCAPE Living Atlas</a></p>
+  <p><a href="museum.html">舊場景（獨立，不連動）</a></p>
+</noscript>
+<script src="js/hero.js"></script>
 </body>
 </html>
