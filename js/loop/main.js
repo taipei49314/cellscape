@@ -34,6 +34,7 @@
       CSL.Atlas.init();
       this._bind();
       this._syncParamsUI();
+      this._setParamEditable();
       if (CSL.I18n) { CSL.I18n.applyShell(); this._syncLang(); }   // T-299 C3：還原已存語言
       this._setBranchBadge();
       this.setMode('explore');
@@ -114,8 +115,8 @@
     setMode(m) {
       this.mode = m;
       $('modeBadge').textContent = m === 'tour' ? '導覽' : '探索';
-      document.querySelectorAll('#paramPanel input').forEach((el) => { el.disabled = (m === 'tour'); });
       if (m === 'explore') CSL.Tour.stop();
+      this._setParamEditable();
       $('exploreBtn').classList.toggle('on', m === 'explore');
       if (this._syncTourNav) this._syncTourNav();
     },
@@ -138,6 +139,8 @@
          在另一世界凑鏈（EVENT_ID_BRANCH_LOCAL 契約） */
       this._expandedEventId = null;
       this._setBranchBadge();
+      this._syncParamsUI();    // 滑桿跟隨顯示中的世界（A 基線 ≠ B 介入值）
+      this._setParamEditable();
       this._tickUI(true);      // 暫停中切換也必須立即刷新 HUD（PAUSED_AB_HUD 契約）
     },
     _setBranchBadge() {
@@ -282,6 +285,11 @@
       $('learnBtn').addEventListener('click', () => { if (global.CSL.Chapters) CSL.Chapters.open(); });   // T-321 K2
       $('evidenceToggle').addEventListener('click', () => this._panel('evidence'));
       $('insToggle').addEventListener('click', () => this._panel('inspector'));
+      $('paramToggle').addEventListener('click', () => this._panel('params'));
+      $('paramClose').addEventListener('click', () => {
+        $('paramPanel').classList.add('closed');
+        document.body.classList.remove('params-open');
+      });
       $('eventList').addEventListener('click', (e) => {
         if (e.target.closest('[data-collapse]')) {           // 收合因果鏈
           this._expandedEventId = null;
@@ -300,21 +308,26 @@
     },
 
     _panel(name) {
-      /* 行動/窄幕：一次只開一個主要面板（並同步 body class，讓參數面板讓位） */
-      const ev = $('evidencePanel'), ins = $('inspector');
+      /* 一次只開一個主要面板（檢閱／事件／參數）；並同步 body class 讓位 */
+      const ev = $('evidencePanel'), ins = $('inspector'), prm = $('paramPanel');
       if (name === 'evidence') {
-        ev.classList.toggle('closed'); ins.classList.add('closed');
+        ev.classList.toggle('closed'); ins.classList.add('closed'); prm.classList.add('closed');
+      } else if (name === 'params') {
+        prm.classList.toggle('closed'); ins.classList.add('closed'); ev.classList.add('closed');
       } else {
-        ins.classList.toggle('closed'); ev.classList.add('closed');
+        ins.classList.toggle('closed'); ev.classList.add('closed'); prm.classList.add('closed');
       }
       document.body.classList.toggle('atlas-open', !ins.classList.contains('closed'));
       document.body.classList.toggle('evidence-open', !ev.classList.contains('closed'));
+      document.body.classList.toggle('params-open', !prm.classList.contains('closed'));
     },
     _inspector(show) {
       $('inspector').classList.toggle('closed', !show);
       $('evidencePanel').classList.add('closed');
+      $('paramPanel').classList.add('closed');
       document.body.classList.toggle('atlas-open', !!show);
       document.body.classList.remove('evidence-open');
+      document.body.classList.remove('params-open');
       if (show && CSL.Atlas) CSL.Atlas.render();   // 開啟檢閱即渲染當前頁籤
     },
     _setReduced(on) {
@@ -422,11 +435,28 @@
           return `<div class="ev chain"><span class="tick mono">t${ev.tick}</span> <b>${text}</b><span class="src">${src}</span></div>`;
         }).join('') + '<div class="ev dim" data-collapse="1" style="cursor:pointer">— 點此收合因果鏈（程式內來源證明，非自然界因果）—</div>';
     },
+    _viewWorld() {
+      return this.activeIsA && this.branchA ? this.branchA : this.world;
+    },
+    _setParamEditable() {
+      const lock = this.mode === 'tour' || !!(this.activeIsA && this.branchA);
+      document.querySelectorAll('#paramPanel input, #drugPanel .drug').forEach((el) => { el.disabled = lock; });
+    },
+    _fmtParam(key, value) {
+      const v = Number(value);
+      if (key === 'altitudeM') return String(Math.round(v));
+      if (key === 'fluidRate' || key === 'glucoseIntake') return v.toFixed(3);
+      if (key === 'temperature') return v.toFixed(1);
+      return v.toFixed(2);
+    },
     _syncParamsUI() {
-      for (const key of ['lungSupply', 'flowSpeed', 'tissueDemand', 'anemia', 'temperature', 'perfusion', 'altitudeM', 'fluidRate', 'glucoseIntake']) {
+      const view = this._viewWorld();
+      for (const key of ['lungSupply', 'flowSpeed', 'tissueDemand', 'anemia', 'temperature', 'perfusion', 'altitudeM', 'fluidRate', 'infection', 'glucoseIntake']) {
         const el = document.querySelector(`#paramPanel input[data-key=${key}]`);
-        el.value = this.world.params[key];
-        $('pv_' + key).textContent = key === 'altitudeM' ? String(Math.round(Number(this.world.params[key]))) : ((key === 'fluidRate' || key === 'glucoseIntake') ? Number(this.world.params[key]).toFixed(3) : Number(this.world.params[key]).toFixed(2));
+        if (!el || view.params[key] == null) continue;
+        el.value = view.params[key];
+        const lab = $('pv_' + key);
+        if (lab) lab.textContent = this._fmtParam(key, view.params[key]);
       }
     },
     _syncLang() {

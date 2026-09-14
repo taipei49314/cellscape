@@ -68,7 +68,12 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(
 .meter.wide{height:8px}
 .meter span{display:block;height:100%;background:linear-gradient(90deg,#8a4a2f,#ff5648);width:0;transition:width .4s}
 .note{font-size:10px;color:var(--dim);margin-top:8px;line-height:1.6}
-#paramPanel{left:50%;transform:translateX(-50%);bottom:14px;width:min(360px,calc(100vw - 24px))}
+#paramPanel{left:14px;top:56px;transform:none;bottom:auto;width:min(320px,36vw);max-height:calc(100vh - 150px);overflow:auto}
+#stockHud{display:flex;gap:16px;justify-content:center;align-items:center;flex-wrap:wrap;
+  pointer-events:none;font-size:12px;color:var(--dim);text-shadow:0 1px 8px #000}
+#stockHud i{font-style:normal;margin-right:4px}
+#stockHud b{color:var(--accent);margin-right:2px}
+#stockHud .meter{width:120px;margin:0}
 #paramPanel .prm{margin-bottom:7px}
 #paramPanel label{font-size:12px;color:var(--text);display:flex;justify-content:space-between;margin-bottom:3px}
 #paramPanel input[type=range]{width:100%;accent-color:var(--accent)}
@@ -188,10 +193,8 @@ details summary{cursor:pointer}
 @media (max-height:500px){ /* 矮幕：按需開啟的檢閱面板蓋在環境參數面板之上（一次一個主要面板） */
   #inspector{z-index:26}
 }
-/* 窄幕/矮幕：檢閱或事件面板開啟時，參數面板讓位（一次一個主要面板；不留死區） */
-@media (max-height:500px), (max-width:760px){
-  body.atlas-open #paramPanel, body.evidence-open #paramPanel{visibility:hidden;pointer-events:none}
-}
+/* 檢閱或事件開啟時參數面板讓位（一次一個主要面板；桌面跟隨動線也適用） */
+body.atlas-open #paramPanel, body.evidence-open #paramPanel{visibility:hidden;pointer-events:none}
 
 /* 血紅素放大視角（T-321 刀 K1）：連續填充＝模型負載欄位，刻度不對應分子數目 */
 .hemoBody h3{margin:0 0 6px;font-size:14px}
