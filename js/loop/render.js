@@ -36,23 +36,31 @@
       this.container = container;
       this.vrng = new CSL.Rng(0x51EED);            // 視覺 RNG（獨立於模型）
       this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
-      this.renderer.setClearColor(0x05080f);
+      this.renderer.setClearColor(0x050814);
       container.appendChild(this.renderer.domElement);
       this.scene = new THREE.Scene();
-      this.scene.fog = new THREE.Fog(0x05080f, 120, 320);
+      /* U4：場景背景對齊品牌深海軍藍（與 U3 CSS 氛圍層同色系） */
+      this.scene.background = new THREE.Color(0x050814);
+      this.scene.fog = new THREE.Fog(0x050814, 120, 320);
       this.camera = new THREE.PerspectiveCamera(55, 1, 0.1, 800);
       this.camera.position.set(0, 62, 98);
 
-      this.scene.add(new THREE.AmbientLight(0x8fa8c0, 0.75));
-      const key = new THREE.DirectionalLight(0xdfeaff, 0.9);
+      /* U4 光層次：環境調低、補半球光（天冷地暖）＋主光＋青色輪廓光 */
+      this.scene.add(new THREE.AmbientLight(0x8fa8c0, 0.5));
+      this.scene.add(new THREE.HemisphereLight(0xbfd8ff, 0x181028, 0.55));
+      const key = new THREE.DirectionalLight(0xdfeaff, 1.0);
       key.position.set(40, 80, 30);
       this.scene.add(key);
+      const rim = new THREE.DirectionalLight(0x9be7ff, 0.3);
+      rim.position.set(-50, 24, -36);
+      this.scene.add(rim);
 
       this._buildLoop();
       this._buildLung();
       this._buildTissue();
       this._buildHearts();
       this._buildRBCs();
+      this._buildWBCs();
       this._buildParticles();
       this._buildLabels();
 
@@ -78,8 +86,9 @@
       this.curve = new THREE.CatmullRomCurve3(pts, true, 'catmullrom', 0.35);
       const tube = new THREE.Mesh(
         new THREE.TubeGeometry(this.curve, 240, 1.9, 10, true),
-        new THREE.MeshStandardMaterial({ color: 0x6e1a28, roughness: 0.5, metalness: 0.1,
-          transparent: true, opacity: 0.42, depthWrite: false })
+        new THREE.MeshStandardMaterial({ color: 0x7e2130, roughness: 0.38, metalness: 0.08,
+          emissive: 0x1c060b, emissiveIntensity: 0.6,
+          transparent: true, opacity: 0.5, depthWrite: false })
       );
       tube.renderOrder = 2;
       this.scene.add(tube);
@@ -100,7 +109,8 @@
       /* 站點節點 */
       this.stations = {};
       const nodeGeo = new THREE.SphereGeometry(2.6, 16, 12);
-      const nodeMat = new THREE.MeshStandardMaterial({ color: 0x2b4155, roughness: 0.4 });
+      const nodeMat = new THREE.MeshStandardMaterial({ color: 0x24405a, roughness: 0.35,
+        emissive: 0x0d2f3f, emissiveIntensity: 0.7 });
       for (const e of CSL.EDGES) {
         const m = new THREE.Mesh(nodeGeo, nodeMat.clone());
         m.position.copy(V3(STATION_POS[e.id]));
@@ -110,17 +120,28 @@
     },
 
     _buildLung() {
+      /* U4：雙葉肺——每側三段漸收球體堆疊成肺葉，左右對稱外張；
+         呼吸脈動在 sync（視覺節律，不影響模型）。 */
       const g = new THREE.Group();
       const pos = V3(STATION_POS.LUNG_CAP);
-      const mat = new THREE.MeshStandardMaterial({ color: 0x9fd8e8, roughness: 0.35, emissive: 0x0a2a33, emissiveIntensity: 0.4 });
+      const mat = new THREE.MeshStandardMaterial({ color: 0x8fc8de, roughness: 0.42,
+        emissive: 0x0a2a33, emissiveIntensity: 0.45 });
       this.alveoli = [];
-      for (let i = 0; i < 9; i++) {
-        const r = 3 + this.vrng.next() * 2.6;
-        const s = new THREE.Mesh(new THREE.SphereGeometry(r, 18, 14), mat);
-        const a = this.vrng.next() * Math.PI * 2, rr = 7 + this.vrng.next() * 6;
-        s.position.set(pos.x + Math.cos(a) * rr, pos.y + 8 + this.vrng.next() * 8, pos.z + Math.sin(a) * rr);
-        this.scene.add(s);
-        this.alveoli.push(s);
+      this.lungLobes = [];
+      for (const side of [-1, 1]) {
+        const lobe = new THREE.Group();
+        const segs = [
+          { dy: 12, r: 3.0 }, { dy: 7, r: 3.8 }, { dy: 1.5, r: 4.3 }, { dy: -4, r: 4.0 }, { dy: -9, r: 3.1 }
+        ];
+        for (const seg of segs) {
+          const s = new THREE.Mesh(new THREE.SphereGeometry(seg.r, 18, 14), mat);
+          s.position.set(pos.x + side * 5.5, pos.y + seg.dy, pos.z + Math.sin(side * 1.3) * 2);
+          lobe.add(s);
+          this.alveoli.push(s);
+        }
+        lobe.rotation.z = side * 0.16;   /* 肺尖略向外張 */
+        this.scene.add(lobe);
+        this.lungLobes.push(lobe);
       }
       g.userData = {}; // (group 保留結構意義)
     },
@@ -129,13 +150,20 @@
       const pos = V3(STATION_POS.TISSUE_CAP);
       const N = 120;
       const geo = new THREE.BoxGeometry(2.0, 2.0, 1.1);
-      const mat = new THREE.MeshStandardMaterial({ color: 0x6b5d4e, roughness: 0.7 });
+      const mat = new THREE.MeshStandardMaterial({ color: 0x6b5d4e, roughness: 0.55,
+        emissive: 0x0c1208, emissiveIntensity: 0.35 });
       this.tissueMesh = new THREE.InstancedMesh(geo, mat, N);
       const m = new THREE.Matrix4();
+      const q = new THREE.Quaternion(), eu = new THREE.Euler();
+      const one = new THREE.Vector3(1, 1, 1);
       let i = 0;
       for (let gx = 0; gx < 12; gx++) for (let gy = 0; gy < 10; gy++) {
         const x = pos.x + 14 + gx * 2.4, y = pos.y - 9 + gy * 2.2, z = pos.z - 12 + this.vrng.next() * 2;
-        m.setPosition(x, y, z);
+        /* U4：每塊隨機微旋轉＋尺度微差——細胞堆疊的有機感（僅視覺） */
+        eu.set((this.vrng.next() - 0.5) * 0.3, (this.vrng.next() - 0.5) * 0.3, (this.vrng.next() - 0.5) * 0.3);
+        q.setFromEuler(eu);
+        const sc = 0.85 + this.vrng.next() * 0.35;
+        m.compose(new THREE.Vector3(x, y, z), q, new THREE.Vector3(sc, sc, sc));
         this.tissueMesh.setMatrixAt(i, m);
         this.tissueMesh.setColorAt(i, new THREE.Color(0x6b5d4e));
         i++;
@@ -146,14 +174,22 @@
     },
 
     _buildHearts() {
+      /* U4：風格化雙室心——上緣兩球＋下緣錐尖，組合出心形剪影；
+         心跳脈動在 sync（既有節律改作用於 Group）。 */
       const mk = (pos, color) => {
-        const m = new THREE.Mesh(
-          new THREE.SphereGeometry(4.4, 20, 16),
-          new THREE.MeshStandardMaterial({ color, roughness: 0.45, emissive: 0x220a0a, emissiveIntensity: 0.5 })
-        );
-        m.position.copy(V3(pos)); m.scale.set(1, 1.15, 0.85);
-        this.scene.add(m);
-        return m;
+        const grp = new THREE.Group();
+        const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.4,
+          emissive: 0x220a0a, emissiveIntensity: 0.5 });
+        const l = new THREE.Mesh(new THREE.SphereGeometry(3.0, 20, 16), mat);
+        l.position.set(-1.5, 1.1, 0);
+        const r = new THREE.Mesh(new THREE.SphereGeometry(3.0, 20, 16), mat);
+        r.position.set(1.5, 1.1, 0);
+        const tip = new THREE.Mesh(new THREE.ConeGeometry(4.1, 6.4, 20), mat);
+        tip.position.set(0, -2.6, 0); tip.rotation.x = Math.PI;
+        grp.add(l, r, tip);
+        grp.position.copy(V3(pos));
+        this.scene.add(grp);
+        return grp;
       };
       this.heartL = mk(STATION_POS.HEART_L, 0x8c2f36);
       this.heartR = mk(STATION_POS.HEART_R, 0x6e2440);
@@ -182,6 +218,21 @@
       this._tmpQ = new THREE.Quaternion();
       this._tmpV = new THREE.Vector3();
       this._tmpS = new THREE.Vector3(1, 1, 1);
+    },
+
+    _buildWBCs() {
+      /* U4：嗜中性球渲染——T-353 的 wbc 實體此前未具像化（免疫軸不可見）。
+         圓球、淡白綠、略大於 RBC 碟，與 RBC 明顯可辨；僅讀世界狀態。 */
+      const MAXW = CSL.WBC_MAX || 8;
+      const geo = new THREE.SphereGeometry(1.9, 16, 12);
+      const mat = new THREE.MeshStandardMaterial({ color: 0xeef7ea, roughness: 0.55,
+        emissive: 0x16241a, emissiveIntensity: 0.55 });
+      this.wbcMesh = new THREE.InstancedMesh(geo, mat, MAXW);
+      this.wbcMesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      const hide = new THREE.Matrix4().makeScale(0, 0, 0);
+      for (let k = 0; k < MAXW; k++) this.wbcMesh.setMatrixAt(k, hide);
+      this.scene.add(this.wbcMesh);
+      this._wbcHide = hide;
     },
 
     _buildParticles() {
@@ -275,11 +326,12 @@
     /* ---------- 每幀同步（只讀模型） ---------- */
     sync(world, dtReal) {
       const t = performance.now() / 1000;
-      /* RBC 實例 */
+      /* RBC 實體（U4：WBC 為不同 kind，走下方獨立網格） */
       let i = 0;
       const ids = Object.keys(world.entities).map(Number).sort((a, b) => a - b);
       for (const id of ids) {
         const e = world.entities[id];
+        if (e.kind === 'wbc') continue;
         const u = this._uFor(world, e);
         const pos = this.curve.getPointAt(u).add(this._rbcOffsets[(id - 1) % this._rbcOffsets.length]);
         const tan = this.curve.getTangentAt(u);
@@ -291,13 +343,39 @@
         if (this.followedId === id) this._followPos = pos.clone();
         i++;
       }
+      /* 收尾：未用實例縮為 0（世界 RBC 退役後不殘影） */
+      const hideAll = this._rbcHide || (this._rbcHide = new THREE.Matrix4().makeScale(0, 0, 0));
+      for (let k = i; k < this.rbcMesh.count; k++) this.rbcMesh.setMatrixAt(k, hideAll);
       this.rbcMesh.instanceMatrix.needsUpdate = true;
       if (this.rbcMesh.instanceColor) this.rbcMesh.instanceColor.needsUpdate = true;
+
+      /* U4：WBC 獨立網格——沿邊即時定位，招募／外滲直接可見（配合 T-401 免疫晶片） */
+      if (this.wbcMesh) {
+        let wi = 0;
+        for (const id of ids) {
+          const e = world.entities[id];
+          if (e.kind !== 'wbc') continue;
+          const u = this._uFor(world, e);
+          const pos = this.curve.getPointAt(u);
+          this._tmpQ.setFromUnitVectors(new THREE.Vector3(0, 1, 0), this.curve.getTangentAt(u).normalize());
+          this._tmpM.compose(pos, this._tmpQ, this._tmpS);
+          this.wbcMesh.setMatrixAt(wi, this._tmpM);
+          wi++;
+        }
+        for (let k = wi; k < this.wbcMesh.count; k++) this.wbcMesh.setMatrixAt(k, this._wbcHide);
+        this.wbcMesh.instanceMatrix.needsUpdate = true;
+      }
 
       /* 心跳脈動（視覺節律，不影響模型） */
       const beat = 1 + 0.07 * Math.sin(t * Math.PI * 2 * 1.15);
       this.heartL.scale.setScalar(beat); this.heartL.scale.y = 1.15 * beat;
       this.heartR.scale.setScalar(beat * 0.98); this.heartR.scale.y = 1.15 * beat * 0.98;
+
+      /* U4 呼吸脈動（視覺節律，不影響模型） */
+      if (this.lungLobes) {
+        const br = 1 + 0.025 * Math.sin(t * Math.PI * 2 * 0.35);
+        for (const lobe of this.lungLobes) lobe.scale.setScalar(br);
+      }
 
       /* 組織色階 = 組織氧庫存水位（模型欄位，介面有標示） */
       const ro = CSL.readout(world);
