@@ -1,6 +1,6 @@
 {
   "kind": "cellscape-frozen-core-baseline",
-  "note": "T-325 基線；T-329 與 T-343/344/347/350 解凍後更新。T-347 軸 A 海拔、T-350 軸 B 血量更新 core.js 與 content.js。T-353 軸 D 免疫招募（1.1.0）更新 core.js（infection＋immunity＋WBC）與 content.js（C-model-infection／C-model-wbc-8＋S11）。T-359 軸 C 血糖—胰島素（1.2.0）更新 core.js（glucose＋insulin＋glucoseIntake）與 content.js（C-model-glucose／C-model-insulin＋S12）。T-380 解凍 tour.js（字幕跟上跟隨的球）。engine/data 仍為 T-325 釘定。unchanged-core.json 不改寫。",
+  "note": "T-325 基線；T-329 與 T-343/344/347/350 解凍後更新。T-347 軸 A 海拔、T-350 軸 B 血量更新 core.js 與 content.js。T-353 軸 D 免疫招募（1.1.0）更新 core.js（infection＋immunity＋WBC）與 content.js（C-model-infection／C-model-wbc-8＋S11）。T-359 軸 C 血糖—胰島素（1.2.0）更新 core.js（glucose＋insulin＋glucoseIntake）與 content.js（C-model-glucose／C-model-insulin＋S12）。T-380 解凍 tour.js（字幕跟上跟隨的球）。T-393 免疫三卡可觀察化更新 content.js（neutrophil 卡 knowledge_only→dynamic＋過時陳述修正＋contentVersion content.6；不改模型動力學）。engine/data 仍為 T-325 釘定。unchanged-core.json 不改寫。",
   "pinned_at_main": "31506887cef3c913cb434b8733d8d522a4df0f36",
   "pinned_at_utc": "2026-09-12T05:10:00Z",
   "files": {
@@ -8,7 +8,7 @@
     "js/loop/model.js": "d779fba758eb658eb7ddd60ef950e4dafbc3ed5282f35459ede8b85b15cb68b5",
     "js/loop/render.js": "a2f82ba92a3c6489d163bbd1b539dc2594969ae7ae3eed3f1398fba318576fdf",
     "js/loop/tour.js": "18952daacac7996fdf8456b3bc4b1e0863e63f7436b1ac90736b35d2dc278159",
-    "js/loop/content.js": "15ea64b96160b19b10ee51e0d585a5242b9d5d7b177cbb0e4d27c537b72bf473",
+    "js/loop/content.js": "eac91f0d6ff20b51806d6cb49bdf6a6b33fe985b2d0d90059ef77d34022869f4",
     "js/engine.js": "6168ed165da03d1d714ece1bbcf7bd33c8d5166a8b7e3874c79cd3d9b68d3ee0",
     "js/data.js": "8759c4cab657574a672b1423b1785e600a0af3dad244d0def36056c3997eae39"
   },
