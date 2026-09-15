@@ -33,6 +33,9 @@
       CSL.Render.init($('r3d'));
       CSL.Atlas.init();
       this._bind();
+      /* U2：開發遙測（frame/p95）預設隱藏，僅 ?debug=1 顯示——不面向學習者。 */
+      this._debugPerf = new URL(location.href).searchParams.has('debug');
+      $('perfBadge').hidden = !this._debugPerf;
       this._syncParamsUI();
       this._setParamEditable();
       if (CSL.I18n) { CSL.I18n.applyShell(); this._syncLang(); }   // T-299 C3：還原已存語言
@@ -408,10 +411,13 @@
       const warmState = this._warmState = this._warmState || {};
       const st = (warmState[view.runId] = warmState[view.runId] || { everStable: false });
       if (warmStable) st.everStable = true;
+      /* U2：HUD 動態文字依目前語言輸出——shell EN 缺鍵回 null 時退繁中原文
+         （與 tour()／now() 同一退回慣例）。 */
+      const L = (k, fb) => (CSL.I18n && CSL.I18n.shell && CSL.I18n.shell(k)) || fb;
       const chip = $('warmChip');
       chip.hidden = false;
-      chip.textContent = warmStable ? '讀數已穩定'
-        : (st.everStable ? '調整中・讀數變動' : '暖機中・讀數未穩');
+      chip.textContent = warmStable ? L('hud.stable', '讀數已穩定')
+        : (st.everStable ? L('hud.adjusting', '調整中・讀數變動') : L('hud.warm', '暖機中・讀數未穩'));
       chip.classList.toggle('stable', warmStable);
       /* U1 介入差異 Δ：偵測顯示中世界最新的參數介入事件，以偵測當下讀值為
          參考（事件最遲於下個取樣點被看見，≈ 介入時刻）；900 tick 窗口內
@@ -431,10 +437,11 @@
            Math.round((ro.meanLoad - ref.m) * 100) / 100]
         : null;
       dAlvEl.hidden = dTisEl.hidden = dMeanEl.hidden = !deltas;
+      const deltaTitle = L('hud.delta', '與介入前參考值相比');
       if (deltas) {
-        dAlvEl.textContent = fmtDelta(deltas[0], 'pp'); dAlvEl.title = '與介入前參考值相比';
-        dTisEl.textContent = fmtDelta(deltas[1], 'pp'); dTisEl.title = '與介入前參考值相比';
-        dMeanEl.textContent = fmtDelta(deltas[2], ''); dMeanEl.title = '與介入前參考值相比';
+        dAlvEl.textContent = fmtDelta(deltas[0], 'pp'); dAlvEl.title = deltaTitle;
+        dTisEl.textContent = fmtDelta(deltas[1], 'pp'); dTisEl.title = deltaTitle;
+        dMeanEl.textContent = fmtDelta(deltas[2], ''); dMeanEl.title = deltaTitle;
         dAlvEl.classList.toggle('up', deltas[0] > 0); dAlvEl.classList.toggle('down', deltas[0] < 0);
         dTisEl.classList.toggle('up', deltas[1] > 0); dTisEl.classList.toggle('down', deltas[1] < 0);
         dMeanEl.classList.toggle('up', deltas[2] > 0); dMeanEl.classList.toggle('down', deltas[2] < 0);
@@ -451,10 +458,29 @@
         const dA = Math.round(ro.alveolarLevel * 100 - ra.alveolarLevel * 100);
         const dS = Math.round(ro.tissueLevel * 100 - ra.tissueLevel * 100);
         const dM = Math.round((ro.meanLoad - ra.meanLoad) * 100) / 100;
+        const dStr = `${dA > 0 ? '+' : ''}${dA}pp／${dS > 0 ? '+' : ''}${dS}pp／${dM > 0 ? '+' : ''}${dM.toFixed(2)}`;
         bdEl.hidden = false;
-        bdEl.textContent = `A 基線即時：肺泡 ${Math.round(ra.alveolarLevel * 100)}%／組織 ${Math.round(ra.tissueLevel * 100)}%／負載 ${ra.meanLoad.toFixed(2)}　目前−A：` +
-          `${dA > 0 ? '+' : ''}${dA}pp／${dS > 0 ? '+' : ''}${dS}pp／${dM > 0 ? '+' : ''}${dM.toFixed(2)}`;
+        bdEl.textContent = L('hud.branchA', 'A 基線即時：肺泡 {a}%／組織 {s}%／負載 {m}　目前−A：{d}')
+          .replace('{a}', String(Math.round(ra.alveolarLevel * 100)))
+          .replace('{s}', String(Math.round(ra.tissueLevel * 100)))
+          .replace('{m}', ra.meanLoad.toFixed(2))
+          .replace('{d}', dStr);
       } else bdEl.hidden = true;
+      /* U2 免疫可見化：感染嚴重度（immunity.remaining）或 WBC 存在時顯示
+         免疫標記；歸零即隱藏。數值為模型單位，非臨床感染指數。 */
+      let wbcCount = 0;
+      for (const k in view.entities) {
+        const e2 = view.entities[k];
+        if (e2 && e2.kind === 'wbc') wbcCount++;
+      }
+      const imm = view.immunity;
+      const immChip = $('immChip');
+      if ((imm && (imm.remaining > 0 || imm.active)) || wbcCount > 0) {
+        immChip.hidden = false;
+        immChip.textContent = L('hud.imm', '感染 {sev}・WBC {wbc}/8（模型單位）')
+          .replace('{sev}', imm ? imm.remaining.toFixed(2) : '0.00')
+          .replace('{wbc}', String(wbcCount));
+      } else immChip.hidden = true;
       /* 檢閱面板 */
       const id = this.selectedId != null ? this.selectedId : this.followedId;
       if (id != null && view.entities[id]) {

@@ -244,3 +244,5 @@ body.atlas-open #paramPanel, body.evidence-open #paramPanel{visibility:hidden;po
 #stockHud .delta.up{color:#9df5c2}
 #stockHud .delta.down{color:#ffb0a0}
 #branchDelta{font-size:12px;color:rgba(190,205,220,.85);text-align:center;padding:2px 0 0}
+#immChip{font-size:11px;padding:2px 8px;border-radius:10px;letter-spacing:.5px;
+  color:#e0c8ff;background:rgba(166,138,200,.16);border:1px solid rgba(166,138,200,.5)}
