@@ -246,3 +246,32 @@ body.atlas-open #paramPanel, body.evidence-open #paramPanel{visibility:hidden;po
 #branchDelta{font-size:12px;color:rgba(190,205,220,.85);text-align:center;padding:2px 0 0}
 #immChip{font-size:11px;padding:2px 8px;border-radius:10px;letter-spacing:.5px;
   color:#e0c8ff;background:rgba(166,138,200,.16);border:1px solid rgba(166,138,200,.5)}
+
+/* ===== U3 封面—內在質感收斂（T-402）：非凍結層樣式；不改 HUD 資訊內容與模型語義 ===== */
+:root{
+  --bg:#050814;
+  --accent:#9be7ff;
+  --line:rgba(155,231,255,.24);
+  --panel:rgba(8,12,24,.72);
+}
+/* 氛圍層：畫布之上的暗角與上下漸層（pointer-events:none；不觸及 render.js） */
+#atmos{position:fixed;inset:0;z-index:5;pointer-events:none;background:
+  radial-gradient(120% 85% at 50% 40%, transparent 52%, rgba(2,5,12,.6) 100%),
+  linear-gradient(180deg, rgba(5,8,20,.55) 0%, rgba(5,8,20,0) 16%, rgba(5,8,20,0) 74%, rgba(5,8,20,.6) 100%)}
+/* HUD 玻璃化：大面積才用 blur，按鈕僅半透明＋邊框（避免逐幀多層模糊成本） */
+#topbar2{background:linear-gradient(180deg,rgba(5,8,20,.85),rgba(5,8,20,.35) 78%,transparent)}
+#bottombar2{background:linear-gradient(0deg,rgba(5,8,20,.85),rgba(5,8,20,.3) 82%,transparent);
+  padding:10px 12px 12px}
+.btn2{background:rgba(8,12,24,.6);border-color:rgba(155,231,255,.22);border-radius:6px}
+.btn2:hover{border-color:rgba(155,231,255,.5)}
+.panel2{background:var(--panel);backdrop-filter:blur(10px);border-radius:12px;
+  border-color:rgba(155,231,255,.2)}
+/* 品牌字對齊登陸頁語彙：無襯線、放寬字距 */
+.brand2{font-family:var(--sans);font-weight:600;letter-spacing:.14em;font-size:14px;color:#eaf6fb}
+/* 開場卡：登陸頁語彙（深海軍藍暈邊＋品牌漸層標題） */
+#landing{background:radial-gradient(120% 100% at 50% 30%, rgba(5,8,20,.42), rgba(5,8,20,.88) 100%)}
+#landing .t1{font-family:var(--sans);font-weight:600;letter-spacing:.34em;font-size:20px;
+  background:linear-gradient(90deg,#f4f7ff 20%,#b9a6ff 72%,#9be7ff);
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+#followBtn{border-radius:6px;letter-spacing:.16em;border-color:rgba(155,231,255,.7)}
+#followBtn:hover{box-shadow:0 0 28px rgba(155,231,255,.35)}
