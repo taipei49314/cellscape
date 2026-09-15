@@ -80,7 +80,10 @@
         {
           id: 'C1',
           zh: '建立 A/B 基線分支（動「肺端供氧」、「貧血程度」、「海拔」、「補水速率」或「感染嚴重度」滑桿，或按任一個藥物預設）',
-          test: (ctx) => !!(ctx.main && ctx.main.branchA),
+          /* 門檻真實性（T-398）：導覽會預建 A 分支（api.enableBranch），故除
+             branchA 外須存在實際介入（world.actions 非空）——導覽預建不得代做。 */
+          test: (ctx) => !!(ctx.main && ctx.main.branchA && ctx.world
+            && Array.isArray(ctx.world.actions) && ctx.world.actions.length > 0),
         },
         {
           id: 'C2',
@@ -149,7 +152,7 @@
       + esc(C('selfReportLabel', '你的因果敘述（只收不評；重整即消失，不寫入模型、不進匯出包、不上傳）')) + '</label>'
       + '<textarea id="chapSelfReport" rows="2" class="chapInput"></textarea>'
       + '<div class="note">' + esc(C('noJudgement',
-        '本章不判定你的說法對不對——判定學習成效需要人類的五人小樣本驗收，尚未執行。控制器也不會替你動任何滑桿。'))
+        '本章不判定你的說法對不對——學習成效未做人類評估、不宣稱。控制器也不會替你動任何滑桿。'))
       + '</div>'
       + '<button id="chapClose" class="btn2 tiny">' + esc(C('close', '關閉')) + '</button></div>';
   }

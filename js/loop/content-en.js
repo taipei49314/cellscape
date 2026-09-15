@@ -184,7 +184,7 @@
       'gate.C3': 'Expand a causal chain once in the event log.',
       'gate.C4': 'Write one sentence with the cause as you see it (collected, never graded; not written into the model, not in the export pack, not uploaded).',
       selfReportLabel: 'Your causal account (collected, never graded; it disappears on reload, is not written into the model, is not in the export pack, and is not uploaded)',
-      noJudgement: 'This chapter does not judge whether your account is right - judging learning outcomes needs the human five-person usability round, which has not been run. The controller also never moves a slider for you.',
+      noJudgement: 'This chapter does not judge whether your account is right - learning outcomes have not been evaluated with human participants and no efficacy is claimed. The controller also never moves a slider for you.',
     },
 
     /* 血紅素放大視角（hemo.js；缺鍵退回繁中） */

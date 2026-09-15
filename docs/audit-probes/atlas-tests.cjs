@@ -462,6 +462,10 @@ const stripComments = (src) => src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^
       const Ch = CSL.Chapters;
       const w = CSL.createWorld({ seed: 5656 });
       for (let i = 0; i < 120; i++) CSL.step(w);
+      /* T-398：章節 C1 門檻要求存在實際介入（導覽預建分支不得代做）——
+         夾具補一筆介入紀錄以代表「學習者已介入」的世界。 */
+      w.actions = w.actions || [];
+      w.actions.push({ tick: 100, kind: 'setParam', source: 'user' });
       const before = CSL.exportRun(w), dBefore = CSL.digest(w);
       const ctx = { world: w, baseline: { tissueLevel: 0.5, everMoved: true }, selfReport: 'x',
                     main: { branchA: {}, activeIsA: true, seenA: true, seenChain: true, expandedEventId: 3 } };
