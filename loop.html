@@ -3,14 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>CELLSCAPE · Living Atlas v0.5.0</title>
+<title>CELLSCAPE · Living Atlas v0.6.0</title>
 <link rel="stylesheet" href="css/loop.css">
 </head>
 <body>
 <div id="r3d"></div>
 
 <header id="topbar2">
-  <span class="brand2">CELLSCAPE <em>LIVING ATLAS v0.5.0</em></span>
+  <span class="brand2">CELLSCAPE <em>LIVING ATLAS v0.6.0</em></span>
   <button id="learnBtn" class="btn2 tiny" data-i18n="learn.entry">📘 學習章節</button>
   <span id="modeBadge" class="badge">探索</span>
   <span id="branchBadge" class="badge b" style="display:none">A 基線</span>
@@ -113,12 +113,14 @@
 <div id="bottombar2">
   <div id="subtitle"></div>
   <div id="stockHud">
-    <span><i>肺泡水位</i><b id="statAlv" class="mono">—</b></span>
-    <span><i>組織水位</i><b id="statTis" class="mono">—</b></span>
-    <span><i>平均負載</i><b id="statMean" class="mono">—</b></span>
+    <span id="warmChip" class="warm-chip" hidden>暖機中・讀數未穩</span>
+    <span><i>肺泡水位</i><b id="statAlv" class="mono">—</b><em id="dAlv" class="delta" hidden></em></span>
+    <span><i>組織水位</i><b id="statTis" class="mono">—</b><em id="dTis" class="delta" hidden></em></span>
+    <span><i>平均負載</i><b id="statMean" class="mono">—</b><em id="dMean" class="delta" hidden></em></span>
     <div class="meter wide"><span id="tisBar"></span></div>
     <span id="stockHint" hidden>比較 A/B 時先看肺泡水位與平均負載</span>
   </div>
+  <div id="branchDelta" class="branch-delta mono" hidden></div>
   <div id="controls2">
     <button id="abToggle" class="btn2" style="display:none">▶ 切到 A（基線）</button>
     <button id="paramToggle" class="btn2 tiny">參數</button>

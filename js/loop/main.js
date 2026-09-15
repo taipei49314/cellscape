@@ -379,6 +379,74 @@
       $('statTis').textContent = Math.round(ro.tissueLevel * 100) + '%';
       $('statMean').textContent = ro.meanLoad.toFixed(2);
       $('tisBar').style.width = Math.round(ro.tissueLevel * 100) + '%';
+      /* U1 暖機標示：滑動窗口內三項讀數變動幅度低於具名閾值才視為穩定。
+         工程近似，非模型契約；樣本按世界 runId 獨立累積——分支初次顯示未滿
+         窗口前一律視為暖機，不繼承他分支樣本（誠實：未觀察足夠久不宣稱穩定）。 */
+      const WARM_WIN = 600, WARM_ALV = 2.0, WARM_TIS = 2.0, WARM_MEAN = 0.03;
+      this._warm = this._warm || {};
+      const ws = (this._warm[view.runId] = this._warm[view.runId] || []);
+      if (!ws.length || view.tick - ws[ws.length - 1].t >= 10)
+        ws.push({ t: view.tick, a: ro.alveolarLevel * 100, s: ro.tissueLevel * 100, m: ro.meanLoad });
+      while (ws.length && view.tick - ws[0].t > WARM_WIN) ws.shift();
+      let warmStable = false;
+      if (ws.length && view.tick - ws[0].t >= WARM_WIN * 0.9) {
+        let aMin = Infinity, aMax = -Infinity, sMin = Infinity, sMax = -Infinity, mMin = Infinity, mMax = -Infinity;
+        for (const p of ws) {
+          aMin = Math.min(aMin, p.a); aMax = Math.max(aMax, p.a);
+          sMin = Math.min(sMin, p.s); sMax = Math.max(sMax, p.s);
+          mMin = Math.min(mMin, p.m); mMax = Math.max(mMax, p.m);
+        }
+        warmStable = (aMax - aMin) < WARM_ALV && (sMax - sMin) < WARM_TIS && (mMax - mMin) < WARM_MEAN;
+      }
+      /* 三態語義：載入後首次穩定前＝「暖機中」；介入等造成的後續變動＝「調整中」
+         （不得把介入暫態誤報成暖機）；穩定＝「讀數已穩定」（弱化）。 */
+      const warmState = this._warmState = this._warmState || {};
+      const st = (warmState[view.runId] = warmState[view.runId] || { everStable: false });
+      if (warmStable) st.everStable = true;
+      const chip = $('warmChip');
+      chip.hidden = false;
+      chip.textContent = warmStable ? '讀數已穩定'
+        : (st.everStable ? '調整中・讀數變動' : '暖機中・讀數未穩');
+      chip.classList.toggle('stable', warmStable);
+      /* U1 介入差異 Δ：偵測顯示中世界最新的參數介入事件，以偵測當下讀值為
+         參考（事件最遲於下個取樣點被看見，≈ 介入時刻）；900 tick 窗口內
+         顯示「目前−參考」，比較對象標注於 title。 */
+      const cmds = view.events.filter((e) => e.kind === 'command');
+      const lastCmd = cmds.length ? cmds[cmds.length - 1] : null;
+      this._dref = this._dref || {};
+      let ref = this._dref[view.runId];
+      if (lastCmd && (!ref || ref.evId !== lastCmd.eventId))
+        ref = this._dref[view.runId] = { evId: lastCmd.eventId, tick: lastCmd.tick,
+          a: ro.alveolarLevel * 100, s: ro.tissueLevel * 100, m: ro.meanLoad };
+      const inWindow = ref && view.tick - ref.tick <= 900;
+      const fmtDelta = (v, unit) => v > 0 ? `▲+${v}${unit}` : v < 0 ? `▼${v}${unit}` : `±0${unit}`;
+      const dAlvEl = $('dAlv'), dTisEl = $('dTis'), dMeanEl = $('dMean');
+      const deltas = inWindow
+        ? [Math.round(ro.alveolarLevel * 100 - ref.a), Math.round(ro.tissueLevel * 100 - ref.s),
+           Math.round((ro.meanLoad - ref.m) * 100) / 100]
+        : null;
+      dAlvEl.hidden = dTisEl.hidden = dMeanEl.hidden = !deltas;
+      if (deltas) {
+        dAlvEl.textContent = fmtDelta(deltas[0], 'pp'); dAlvEl.title = '與介入前參考值相比';
+        dTisEl.textContent = fmtDelta(deltas[1], 'pp'); dTisEl.title = '與介入前參考值相比';
+        dMeanEl.textContent = fmtDelta(deltas[2], ''); dMeanEl.title = '與介入前參考值相比';
+        dAlvEl.classList.toggle('up', deltas[0] > 0); dAlvEl.classList.toggle('down', deltas[0] < 0);
+        dTisEl.classList.toggle('up', deltas[1] > 0); dTisEl.classList.toggle('down', deltas[1] < 0);
+        dMeanEl.classList.toggle('up', deltas[2] > 0); dMeanEl.classList.toggle('down', deltas[2] < 0);
+      }
+      /* U1 A/B 同框差異：基線分支與主世界鎖步推進（既有機制）——顯示 B 時
+         同框呈現 A 的即時讀值與「目前−A」，免跨切換記憶比對。顯示 A 時
+         不重複呈現（分支徽章已標明）。 */
+      const bdEl = $('branchDelta');
+      if (this.branchA && !(this.activeIsA && this.branchA)) {
+        const ra = CSL.readout(this.branchA);
+        const dA = Math.round(ro.alveolarLevel * 100 - ra.alveolarLevel * 100);
+        const dS = Math.round(ro.tissueLevel * 100 - ra.tissueLevel * 100);
+        const dM = Math.round((ro.meanLoad - ra.meanLoad) * 100) / 100;
+        bdEl.hidden = false;
+        bdEl.textContent = `A 基線即時：肺泡 ${Math.round(ra.alveolarLevel * 100)}%／組織 ${Math.round(ra.tissueLevel * 100)}%／負載 ${ra.meanLoad.toFixed(2)}　目前−A：` +
+          `${dA > 0 ? '+' : ''}${dA}pp／${dS > 0 ? '+' : ''}${dS}pp／${dM > 0 ? '+' : ''}${dM.toFixed(2)}`;
+      } else bdEl.hidden = true;
       /* 檢閱面板 */
       const id = this.selectedId != null ? this.selectedId : this.followedId;
       if (id != null && view.entities[id]) {
