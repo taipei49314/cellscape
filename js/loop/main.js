@@ -187,9 +187,14 @@
         });
       });
       $('abToggle').addEventListener('click', () => this.toggleBranch());
-      $('camOverview').addEventListener('click', () => CSL.Render.setView('OVERVIEW'));
-      $('camLung').addEventListener('click', () => CSL.Render.setView('LUNG'));
-      $('camTissue').addEventListener('click', () => CSL.Render.setView('TISSUE'));
+      /* U1.5：視圖預設按鈕標示目前所在視圖（.on 樣式與自由探索一致） */
+      const camPresets = [['camOverview', 'OVERVIEW'], ['camLung', 'LUNG'], ['camTissue', 'TISSUE']];
+      for (const [btnId, mode] of camPresets) {
+        $(btnId).addEventListener('click', () => {
+          CSL.Render.setView(mode);
+          for (const [oid] of camPresets) $(oid).classList.toggle('on', oid === btnId);
+        });
+      }
       $('btnExport').addEventListener('click', () => {
         const blob = new Blob([CSL.exportRun(this.world)], { type: 'application/json' });
         const a = document.createElement('a');
@@ -438,7 +443,10 @@
          同框呈現 A 的即時讀值與「目前−A」，免跨切換記憶比對。顯示 A 時
          不重複呈現（分支徽章已標明）。 */
       const bdEl = $('branchDelta');
-      if (this.branchA && !(this.activeIsA && this.branchA)) {
+      /* U1.5 除噪：導覽會預建 A 分支（api.enableBranch）——僅在主世界存在
+         實際介入（actions 非空）後才顯示同框差異，未介入前 0pp 條不露出台。 */
+      if (this.branchA && !(this.activeIsA && this.branchA)
+        && Array.isArray(this.world.actions) && this.world.actions.length > 0) {
         const ra = CSL.readout(this.branchA);
         const dA = Math.round(ro.alveolarLevel * 100 - ra.alveolarLevel * 100);
         const dS = Math.round(ro.tissueLevel * 100 - ra.tissueLevel * 100);
