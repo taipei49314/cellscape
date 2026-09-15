@@ -14,7 +14,7 @@
   const CSL = global.CSL || (global.CSL = {});
 
   CSL.Content = {
-    contentVersion: 'v0.3.0-content.5',
+    contentVersion: 'v0.3.0-content.6',
 
     /* 來源表：與 planning 包 SOURCE-REGISTER.json（S1–S8）一致。
        assetNote 提醒：引用敘事 ≠ 可打包其影片/插圖。 */
@@ -209,8 +209,8 @@
             a: '吞噬清除抵達肺泡深處的微粒、碎片與病原，是肺泡面對外界環境的第一線防禦之一。',
             claimIds: ['C-alvmac-role'] },
           { q: '和哪些結構或角色合作？',
-            a: '在氣道防禦中與黏膜纖毛清除、上皮屏障協作；感染時可召喚嗜中性球等後續免疫反應。',
-            claimIds: ['C-neut-role'] },
+            a: '在氣道防禦中與黏膜纖毛清除、上皮屏障協作；感染時可召喚嗜中性球等後續免疫反應——本連動世界的嗜中性球招募與清除可觀察（見嗜中性球卡）。',
+            claimIds: ['C-neut-role', 'C-model-wbc-8'] },
           { q: '這個 demo 做到與沒做到什麼？',
             a: '做到：知識說明。舊的 index.html 獨立場景有通用巨噬細胞吞噬展示（legacy_independent，未與本連動世界共享狀態）。沒做到：本連動世界沒有巨噬實體，也沒有肺泡特異免疫模型。',
             claimIds: ['C-legacy-indep'] }
@@ -218,23 +218,23 @@
       },
       {
         id: 'neutrophil', name: '嗜中性球', en: 'Neutrophil', aliases: ['neutrophil', '嗜中性白血球', '白血球'],
-        category: '免疫', capability: 'knowledge_only',
-        capabilityNote: '知識／可連到舊獨立展示（engine.js 的趨化追擊為高度簡化）。',
+        category: '免疫', capability: 'dynamic',
+        capabilityNote: '動態模型實體：infection>0 時循環中有 wbc 實體（同時上限 8 顆）；招募、外滲與清除為簡化模型，數值是模型單位，非臨床白血球計數。',
         headline: '數量最多的白血球，先天免疫的快速反應部隊。',
-        keyPoints: ['白血球中占比最高', '感染時最先抵達，吞噬病原', '舊場景有趨化追擊的簡化展示'],
+        keyPoints: ['白血球中占比最高', '感染時最先抵達，吞噬病原', '本連動世界有 wbc 實體：招募、外滲、清除感染（模型單位）'],
         qa: [
           { q: '我是誰、通常在哪裡？',
-            a: '嗜中性球是白血球中占比最高的類型，平時在血流中巡邏，感染發生時最快被招募到組織現場。',
-            claimIds: ['C-neut-share', 'C-neut-role'] },
+            a: '嗜中性球是白血球中占比最高的類型，平時在血流中巡邏，感染發生時最快被招募到組織現場。本連動世界以 wbc 實體呈現：感染設定後自靜脈端血液招募。',
+            claimIds: ['C-neut-share', 'C-neut-role', 'C-model-wbc-8'] },
           { q: '主要做什麼？',
-            a: '沿趨化訊號移動到感染處，吞噬並消滅細菌等病原；化膿時的膿即含大量嗜中性球與殘骸。',
-            claimIds: ['C-neut-role'] },
+            a: '沿趨化訊號移動到感染處，吞噬並消滅細菌等病原；化膿時的膿即含大量嗜中性球與殘骸。模型中每顆 wbc 抵組織微血管即外滲，每次清除 0.125 感染嚴重度、歸零發清除事件。',
+            claimIds: ['C-neut-role', 'C-model-infection'] },
           { q: '和哪些結構或角色合作？',
-            a: '與巨噬細胞等先天免疫協作（巨噬在前哨、嗜中性球在增援）；與血管內皮交互遷出血管。',
-            claimIds: ['C-alvmac-role'] },
+            a: '與巨噬細胞等先天免疫協作（巨噬在前哨、嗜中性球在增援）；與血管內皮交互遷出血管——模型以外滲呈現這一步。',
+            claimIds: ['C-alvmac-role', 'C-model-infection'] },
           { q: '這個 demo 做到與沒做到什麼？',
-            a: '做到：知識說明；舊獨立場景（index.html）有「趨化訊號→追擊→吞噬」的展示，但那是族群動力學層級的簡化，且未與本連動世界共享狀態。沒做到：本連動世界沒有嗜中性球實體。',
-            claimIds: ['C-legacy-indep'] }
+            a: '做到：本連動世界有嗜中性球實體（kind wbc，同時上限 8 顆、不攜氧）——infection>0 時自靜脈端每 90 tick 招募一顆、沿邊移動、抵組織微血管外滲並清除 0.125 感染嚴重度、歸零發感染清除事件；招募節奏是工程近似，數值為模型單位。舊 index.html 獨立場景另有「趨化訊號→追擊→吞噬」展示（legacy_independent，未共享狀態）。沒做到：個別趨化受體與組織學層級的遷移細節、臨床白血球計數、全身白血球總量。',
+            claimIds: ['C-model-wbc-8', 'C-model-infection'] }
         ]
       },
       {

@@ -321,28 +321,28 @@
           { q: 'What do I mainly do?',
             a: 'They engulf and clear particles, debris and pathogens that reach the deep alveoli — one of the alveoli’s first lines of defence against the outside world.' },
           { q: 'Which structures and roles do I work with?',
-            a: 'In airway defence they cooperate with mucociliary clearance and the epithelial barrier; on infection they can call in neutrophils and further immune responses.' },
+            a: 'In airway defence they cooperate with mucociliary clearance and the epithelial barrier; on infection they can call in neutrophils and further immune responses — neutrophil recruitment and clearance are observable in this linked world (see the neutrophil card).' },
           { q: 'What does this demo do, and not do?',
             a: 'Does: knowledge explanation. The legacy index.html scene has a generic macrophage engulfing display (legacy_independent — no shared state with this linked world). Does not: this linked world has no macrophage entity and no alveolar-specific immune model.' }
         ]
       },
       neutrophil: {
-        capabilityNote: 'Knowledge / links to the legacy standalone display (the engine.js chemotaxis chase is highly simplified).',
+        capabilityNote: 'Dynamic model entity: when infection > 0 the circulation holds wbc entities (at most 8 at once); recruitment, extravasation and clearance are simplified model behaviour in model units, not clinical white-cell counts.',
         headline: 'The most abundant white blood cell — the fast-response force of innate immunity.',
         keyPoints: [
           'The largest share of white blood cells',
           'First to arrive at infections, engulfing pathogens',
-          'The legacy scene shows a simplified chemotaxis chase'
+          'This linked world has wbc entities: recruitment, extravasation and infection clearance (model units)'
         ],
         qa: [
           { q: 'What am I, and where am I usually found?',
-            a: 'Neutrophils are the most abundant type of white blood cell, patrolling the bloodstream until an infection recruits them to the tissue scene fastest.' },
+            a: 'Neutrophils are the most abundant type of white blood cell, patrolling the bloodstream until an infection recruits them to the tissue scene fastest. This linked world presents that recruitment with wbc entities: once infection is set, they are recruited from the venous blood.' },
           { q: 'What do I mainly do?',
-            a: 'They move along chemotactic signals to infection sites and engulf and destroy bacteria and other pathogens; pus is largely neutrophils and debris.' },
+            a: 'They move along chemotactic signals to infection sites and engulf and destroy bacteria and other pathogens; pus is largely neutrophils and debris. In the model each wbc extravasates on reaching the tissue capillary, clearing 0.125 infection severity each time; a cleared event fires at zero.' },
           { q: 'Which structures and roles do I work with?',
-            a: 'They cooperate with macrophages and other innate defences (macrophages sentinel, neutrophils reinforcing) and cross the vessel wall through endothelial interactions.' },
+            a: 'They cooperate with macrophages and other innate defences (macrophages sentinel, neutrophils reinforcing) and cross the vessel wall through endothelial interactions — the model presents this step as extravasation.' },
           { q: 'What does this demo do, and not do?',
-            a: 'Does: knowledge explanation; the legacy standalone scene (index.html) shows a “chemotactic signal → chase → engulf” display, but that is a population-level simplification sharing no state with this linked world. Does not: this linked world has no neutrophil entities.' }
+            a: 'Does: this linked world has neutrophil entities (kind wbc, at most 8 at once, carrying no oxygen) — when infection > 0 one is recruited from the venous side every 90 ticks, travels along edges, extravasates at the tissue capillary and clears 0.125 infection severity, with an infection-cleared event at zero; the recruitment cadence is an engineering approximation and the numbers are model units. The legacy standalone scene (index.html) additionally shows a “chemotactic signal → chase → engulf” display (legacy_independent, no shared state). Does not: individual chemokine receptors or histology-level migration detail, clinical white-cell counts, or total body white-cell counts.' }
         ]
       },
       tcell: {
