@@ -45,12 +45,15 @@
       this.camera = new THREE.PerspectiveCamera(55, 1, 0.1, 800);
       this.camera.position.set(0, 62, 98);
 
-      /* U4 光層次：環境調低、補半球光（天冷地暖）＋主光＋青色輪廓光 */
+      /* U4 光層次：環境調低、補半球光（天冷地暖）＋主光＋青色輪廓光；
+         U5：hemi/key 保留參照供心跳同步脈動。 */
       this.scene.add(new THREE.AmbientLight(0x8fa8c0, 0.5));
-      this.scene.add(new THREE.HemisphereLight(0xbfd8ff, 0x181028, 0.55));
+      this.hemiLight = new THREE.HemisphereLight(0xbfd8ff, 0x181028, 0.55);
+      this.scene.add(this.hemiLight);
       const key = new THREE.DirectionalLight(0xdfeaff, 1.0);
       key.position.set(40, 80, 30);
       this.scene.add(key);
+      this.keyLight = key;
       const rim = new THREE.DirectionalLight(0x9be7ff, 0.3);
       rim.position.set(-50, 24, -36);
       this.scene.add(rim);
@@ -62,6 +65,8 @@
       this._buildRBCs();
       this._buildWBCs();
       this._buildParticles();
+      this._buildBackdrop();
+      this._buildAmbientCells();
       this._buildLabels();
 
       this._orbit = { az: 0, pol: 0.42, dist: 120, target: new THREE.Vector3(0, 0, 0) };
@@ -235,6 +240,64 @@
       this._wbcHide = hide;
     },
 
+    _buildBackdrop() {
+      /* U5：人體內部環境——組織色漸層穹頂（反向球殼、單 draw call）。
+         地平深組織紅暈漸入品牌深海軍藍，帶極慢色帶流動；純氛圍示意。 */
+      const geo = new THREE.SphereGeometry(420, 24, 16);
+      const mat = new THREE.ShaderMaterial({
+        side: THREE.BackSide,
+        depthWrite: false,
+        uniforms: { uTime: { value: 0 } },
+        vertexShader: 'varying vec3 vP; void main(){ vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+        fragmentShader: [
+          'varying vec3 vP;',
+          'uniform float uTime;',
+          'void main(){',
+          '  vec3 n = normalize(vP);',
+          '  float h = clamp((n.y + 0.35) / 0.9, 0.0, 1.0);',
+          '  vec3 tissue = vec3(0.135, 0.031, 0.060);',
+          '  vec3 navy   = vec3(0.020, 0.031, 0.078);',
+          '  vec3 col = mix(tissue, navy, smoothstep(0.0, 1.0, h));',
+          '  float band = sin(n.y * 9.0 + uTime * 0.12) * 0.5 + 0.5;',
+          '  col += vec3(0.05, 0.012, 0.02) * band * (1.0 - h) * 0.55;',
+          '  gl_FragColor = vec4(col, 1.0);',
+          '}'
+        ].join('\n')
+      });
+      this.backdropMat = mat;
+      this.scene.add(new THREE.Mesh(geo, mat));
+    },
+
+    _buildAmbientCells() {
+      /* U5：漂浮血漿細胞——迴圈外殼緩漂的半透明橢圓體（單 InstancedMesh），
+         鏡頭移動時自然視差；reducedMotion 靜止。僅氛圍，不觸世界。 */
+      const N = this.quality === 'low' ? 20 : 48;
+      const geo = new THREE.SphereGeometry(1, 10, 8);
+      geo.scale(1.5, 0.9, 1.1);
+      const mat = new THREE.MeshStandardMaterial({ color: 0x8c3550, roughness: 0.6,
+        transparent: true, opacity: 0.16, depthWrite: false,
+        emissive: 0x22060f, emissiveIntensity: 0.4 });
+      this.ambCells = new THREE.InstancedMesh(geo, mat, N);
+      this.ambCells.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      this.ambSeed = [];
+      for (let k = 0; k < N; k++) {
+        this.ambSeed.push({
+          r: 60 + this.vrng.next() * 110,
+          a: this.vrng.next() * Math.PI * 2,
+          y: -20 + this.vrng.next() * 55,
+          s: 2 + this.vrng.next() * 4.5,
+          sp: 0.008 + this.vrng.next() * 0.02,
+          ph: this.vrng.next() * Math.PI * 2
+        });
+      }
+      this._ambM = new THREE.Matrix4();
+      this._ambQ = new THREE.Quaternion();
+      this._ambE = new THREE.Euler();
+      this._ambV = new THREE.Vector3();
+      this._ambS = new THREE.Vector3();
+      this.scene.add(this.ambCells);
+    },
+
     _buildParticles() {
       const mk = (n, color) => {
         const geo = new THREE.BufferGeometry();
@@ -375,6 +438,30 @@
       if (this.lungLobes) {
         const br = 1 + 0.025 * Math.sin(t * Math.PI * 2 * 0.35);
         for (const lobe of this.lungLobes) lobe.scale.setScalar(br);
+      }
+
+      /* U5 背景動畫：穹頂色帶時間、漂浮血漿細胞（reducedMotion 靜止） */
+      if (this.backdropMat) this.backdropMat.uniforms.uTime.value = t;
+      if (this.ambCells) {
+        const frozen = this.reducedMotion;
+        for (let k = 0; k < this.ambCells.count; k++) {
+          const sd = this.ambSeed[k];
+          const a = sd.a + (frozen ? 0 : t * sd.sp);
+          const y = sd.y + (frozen ? 0 : Math.sin(t * 0.18 + sd.ph) * 3);
+          this._ambE.set(0, frozen ? sd.ph : t * sd.sp * 2 + sd.ph, sd.ph);
+          this._ambQ.setFromEuler(this._ambE);
+          this._ambV.set(Math.cos(a) * sd.r, y, Math.sin(a) * sd.r);
+          this._ambS.set(sd.s, sd.s, sd.s);
+          this._ambM.compose(this._ambV, this._ambQ, this._ambS);
+          this.ambCells.setMatrixAt(k, this._ambM);
+        }
+        this.ambCells.instanceMatrix.needsUpdate = true;
+      }
+      /* U5 心跳同步環境脈動（±5%，與心臟同時脈；reducedMotion 恆定） */
+      if (this.hemiLight && !this.reducedMotion) {
+        const p = 1 + 0.05 * Math.sin(t * Math.PI * 2 * 1.15);
+        this.hemiLight.intensity = 0.55 * p;
+        this.keyLight.intensity = 1.0 * (2 - p) * 0.5;
       }
 
       /* 組織色階 = 組織氧庫存水位（模型欄位，介面有標示） */
