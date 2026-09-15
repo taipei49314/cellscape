@@ -96,6 +96,7 @@
           emissive: 0x1c060b, emissiveIntensity: 0.6,
           transparent: true, opacity: 0.5, depthWrite: false })
       );
+      this.tubeMat = tube.material;
       tube.renderOrder = 2;
       this.scene.add(tube);
       /* 站點弧長契約：曲線取樣找出每個站點的弧長參數 u。
@@ -112,6 +113,17 @@
         }
         return best;
       });
+      /* U7 效能：曲線取樣 LUT——sync 熱路徑不再逐實體呼叫 getPointAt／getTangentAt
+         （兩者每呼叫都配置新物件並做弧長映射；2048 弧長均勻樣本線性內插的視覺誤差可忽略） */
+      const LUT_N = 2048;
+      this.LUT_N = LUT_N;
+      this.lutPos = new Array(LUT_N + 1);
+      this.lutTan = new Array(LUT_N + 1);
+      for (let k = 0; k <= LUT_N; k++) {
+        const u = k / LUT_N;
+        this.lutPos[k] = this.curve.getPointAt(u);
+        this.lutTan[k] = this.curve.getTangentAt(u).normalize();
+      }
       /* 站點節點 */
       this.stations = {};
       const nodeGeo = new THREE.SphereGeometry(2.6, 16, 12);
@@ -482,24 +494,50 @@
       return u % 1;
     },
 
+    /* U7 效能：以 LUT 線性內插取代熱路徑的 getPointAt／getTangentAt（零配置） */
+    _lutAt(world, e, outPos, outTan) {
+      const i = e.edge;
+      const u0 = this.uStations[i];
+      let u1 = this.uStations[(i + 1) % this.uStations.length];
+      if (u1 <= u0) u1 += 1;
+      const f = (u0 + (u1 - u0) * Math.min(1, Math.max(0, e.s)) % 1) * this.LUT_N;
+      const k = Math.min(this.LUT_N - 1, Math.max(0, Math.floor(f)));
+      const fr = Math.min(1, Math.max(0, f - k));
+      const k2 = k + 1;
+      if (outPos) outPos.copy(this.lutPos[k]).lerp(this.lutPos[k2], fr);
+      if (outTan) outTan.copy(this.lutTan[k]).lerp(this.lutTan[k2], fr).normalize();
+      return outPos;
+    },
+
     _rbcWorldPos(world, e) {
-      const p = this.curve.getPointAt(this._uFor(world, e));
+      const p = this._lutAt(world, e, new THREE.Vector3(), null);
       return p.add(this._rbcOffsets[(e.id - 1) % this._rbcOffsets.length]);
     },
 
     /* ---------- 每幀同步（只讀模型） ---------- */
     sync(world, dtReal) {
       const t = performance.now() / 1000;
-      /* RBC 實體（U4：WBC 為不同 kind，走下方獨立網格） */
+      /* RBC 實體（U4：WBC 為不同 kind，走下方獨立網格）。
+         U7 效能：位置／切線走 LUT、暫存向量重用——熱路徑零配置。 */
       let i = 0;
       const ids = Object.keys(world.entities).map(Number).sort((a, b) => a - b);
+      const axisY = this._axisY || (this._axisY = new THREE.Vector3(0, 1, 0));
+      const pos = this._posV || (this._posV = new THREE.Vector3());
+      const tan = this._tanV || (this._tanV = new THREE.Vector3());
+      const q2 = this._tmpQ2 || (this._tmpQ2 = new THREE.Quaternion());
       for (const id of ids) {
         const e = world.entities[id];
         if (e.kind === 'wbc') continue;
-        const u = this._uFor(world, e);
-        const pos = this.curve.getPointAt(u).add(this._rbcOffsets[(id - 1) % this._rbcOffsets.length]);
-        const tan = this.curve.getTangentAt(u);
-        this._tmpQ.setFromUnitVectors(new THREE.Vector3(0, 1, 0), tan.clone().normalize());
+        this._lutAt(world, e, pos, tan);
+        pos.add(this._rbcOffsets[(id - 1) % this._rbcOffsets.length]);
+        this._tmpQ.setFromUnitVectors(axisY, tan);
+        /* U7 血流沉浸：沿行進軸翻滾＋微小徑向擺動（僅視覺；reducedMotion 靜態） */
+        if (!this.reducedMotion) {
+          q2.setFromAxisAngle(tan, t * 2.2 + id * 1.3);
+          this._tmpQ.multiply(q2);
+          const wob = Math.sin(t * 1.7 + id * 0.9) * 0.22;
+          pos.x += tan.z * wob; pos.z += -tan.x * wob;
+        }
         this._tmpM.compose(pos, this._tmpQ, this._tmpS);
         this.rbcMesh.setMatrixAt(i, this._tmpM);
         this._tmpC.copy(this._colLow).lerp(this._colHigh, Math.max(0, Math.min(1, e.load)));
@@ -513,15 +551,15 @@
       this.rbcMesh.instanceMatrix.needsUpdate = true;
       if (this.rbcMesh.instanceColor) this.rbcMesh.instanceColor.needsUpdate = true;
 
-      /* U4：WBC 獨立網格——沿邊即時定位，招募／外滲直接可見（配合 T-401 免疫晶片） */
+      /* U4：WBC 獨立網格——沿邊即時定位，招募／外滲直接可見（配合 T-401 免疫晶片）。
+         U7：走 LUT 零配置熱路徑。 */
       if (this.wbcMesh) {
         let wi = 0;
         for (const id of ids) {
           const e = world.entities[id];
           if (e.kind !== 'wbc') continue;
-          const u = this._uFor(world, e);
-          const pos = this.curve.getPointAt(u);
-          this._tmpQ.setFromUnitVectors(new THREE.Vector3(0, 1, 0), this.curve.getTangentAt(u).normalize());
+          this._lutAt(world, e, pos, tan);
+          this._tmpQ.setFromUnitVectors(axisY, tan);
           this._tmpM.compose(pos, this._tmpQ, this._tmpS);
           this.wbcMesh.setMatrixAt(wi, this._tmpM);
           wi++;
@@ -565,13 +603,17 @@
         this.keyLight.intensity = 1.0 * (2 - p) * 0.5;
       }
 
-      /* 組織色階 = 組織氧庫存水位（模型欄位，介面有標示） */
+      /* 組織色階 = 組織氧庫存水位（模型欄位，介面有標示）；U7：靜態色快取零配置 */
+      this._tissueHi = this._tissueHi || new THREE.Color(0x7fd0a8);
+      this._tissueLo = this._tissueLo || new THREE.Color(0x574b3f);
       const ro = CSL.readout(world);
-      const tCol = this._tmpC.set(0x574b3f).lerp(new THREE.Color(0x7fd0a8), Math.max(0, Math.min(1, ro.tissueLevel)));
+      const tCol = this._tmpC.copy(this._tissueLo).lerp(this._tissueHi, Math.max(0, Math.min(1, ro.tissueLevel)));
       if (this.tissueMesh.instanceColor) {
         for (let k = 0; k < this.tissueMesh.count; k++) this.tissueMesh.setColorAt(k, tCol);
         this.tissueMesh.instanceColor.needsUpdate = true;
       }
+      /* U7：血管隨心跳搏動（emissive ±18%，視覺節律） */
+      if (this.tubeMat) this.tubeMat.emissiveIntensity = 0.6 * (1 + 0.18 * Math.sin(t * Math.PI * 2 * 1.15));
 
       /* 交換粒子：存活率由最近通量（EMA）驅動——僅代表流向與相對速率 */
       this._updateParticles(world, dtReal);
@@ -580,7 +622,8 @@
       if (this.view === 'FOLLOW' && this.followedId && world.entities[this.followedId]) {
         const e = world.entities[this.followedId];
         const p = this._rbcWorldPos(world, e);
-        const tan = this.curve.getTangentAt(this._uFor(world, e));
+        const tan = this._camTan || (this._camTan = new THREE.Vector3());
+        this._lutAt(world, e, null, tan);
         const desired = p.clone().add(tan.clone().multiplyScalar(-9)).add(new THREE.Vector3(0, 4.5, 0));
         if (this.reducedMotion) { this.camera.position.copy(desired); this.camera.lookAt(p); }
         else {
@@ -590,9 +633,11 @@
         }
       } else {
         const o = this._orbit;
-        const px = o.target.x + o.dist * Math.sin(o.az) * Math.cos(o.pol);
+        /* U7 電影感：總覽閒置時方位角微漂（reducedMotion 停用） */
+        const az = o.az + (this.reducedMotion ? 0 : Math.sin(t * 0.1) * 0.035);
+        const px = o.target.x + o.dist * Math.sin(az) * Math.cos(o.pol);
         const py = o.target.y + o.dist * Math.sin(o.pol);
-        const pz = o.target.z + o.dist * Math.cos(o.az) * Math.cos(o.pol);
+        const pz = o.target.z + o.dist * Math.cos(az) * Math.cos(o.pol);
         if (this.reducedMotion) this._snapCamera();
         else {
           this.camera.position.lerp(new THREE.Vector3(px, py, pz), Math.min(1, dtReal * 3));
