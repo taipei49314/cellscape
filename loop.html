@@ -17,7 +17,7 @@
   <span id="pauseNote" class="badge warn" style="display:none">頁籤隱藏：模型暫停（不追趕）</span>
   <span id="errNote" class="badge warn" style="display:none"></span>
   <span class="grow"></span>
-  <span id="perfBadge" class="mono small"></span>
+  <span id="perfBadge" class="mono small" hidden></span>
   <span id="tickN" class="mono small"></span>
   <span id="worldClock" class="mono">00:00</span>
   <button id="btnPause2" class="btn2 icon">❚❚</button>
@@ -114,9 +114,10 @@
   <div id="subtitle"></div>
   <div id="stockHud">
     <span id="warmChip" class="warm-chip" hidden>暖機中・讀數未穩</span>
-    <span><i>肺泡水位</i><b id="statAlv" class="mono">—</b><em id="dAlv" class="delta" hidden></em></span>
-    <span><i>組織水位</i><b id="statTis" class="mono">—</b><em id="dTis" class="delta" hidden></em></span>
-    <span><i>平均負載</i><b id="statMean" class="mono">—</b><em id="dMean" class="delta" hidden></em></span>
+    <span id="immChip" class="imm-chip" hidden></span>
+    <span><i data-i18n="hud.alv">肺泡水位</i><b id="statAlv" class="mono">—</b><em id="dAlv" class="delta" hidden></em></span>
+    <span><i data-i18n="hud.tis">組織水位</i><b id="statTis" class="mono">—</b><em id="dTis" class="delta" hidden></em></span>
+    <span><i data-i18n="hud.mean">平均負載</i><b id="statMean" class="mono">—</b><em id="dMean" class="delta" hidden></em></span>
     <div class="meter wide"><span id="tisBar"></span></div>
     <span id="stockHint" hidden>比較 A/B 時先看肺泡水位與平均負載</span>
   </div>

@@ -18,6 +18,15 @@
 
     /* 殼層字串（loop.html data-i18n 與 atlas 標題） */
     shell: {
+      'hud.alv': 'Alveolar level',
+      'hud.tis': 'Tissue level',
+      'hud.mean': 'Mean load',
+      'hud.warm': 'Warming up · readings not yet stable',
+      'hud.stable': 'Readings stable',
+      'hud.adjusting': 'Adjusting · readings shifting',
+      'hud.delta': 'vs pre-intervention reference',
+      'hud.imm': 'Infection {sev} · WBC {wbc}/8 (model units)',
+      'hud.branchA': 'A baseline (live): alv {a}% / tis {s}% / load {m}   now−A: {d}',
       'tab.know': 'Know it', 'tab.now': 'Right now', 'tab.mech': 'How it works', 'tab.src': 'Sources',
       'nav.follow': '◎ Follow a red blood cell',
       'tour.prev': '◀ Previous step',
