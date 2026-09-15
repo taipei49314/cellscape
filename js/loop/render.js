@@ -60,6 +60,7 @@
 
       this._buildLoop();
       this._buildLung();
+      this._buildRibcage();
       this._buildTissue();
       this._buildHearts();
       this._buildRBCs();
@@ -125,26 +126,30 @@
     },
 
     _buildLung() {
-      /* U4：雙葉肺——每側三段漸收球體堆疊成肺葉，左右對稱外張；
-         呼吸脈動在 sync（視覺節律，不影響模型）。 */
+      /* U6：解剖形態肺——每側多球堆疊的縱向肺葉輪廓（下寬上尖、內側容心），
+         肉粉色系；呼吸脈動作用於整葉 Group（視覺節律，不影響模型）。 */
       const g = new THREE.Group();
       const pos = V3(STATION_POS.LUNG_CAP);
-      const mat = new THREE.MeshStandardMaterial({ color: 0x8fc8de, roughness: 0.42,
-        emissive: 0x0a2a33, emissiveIntensity: 0.45 });
+      const base = { color: 0xd18a8f, roughness: 0.5, emissive: 0x2a0d12, emissiveIntensity: 0.35 };
       this.alveoli = [];
       this.lungLobes = [];
+      const col = (i) => new THREE.MeshStandardMaterial({
+        color: new THREE.Color(base.color).offsetHSL(0, 0, (i % 3) * 0.012 - 0.012),
+        roughness: 0.5, emissive: base.emissive, emissiveIntensity: base.emissiveIntensity });
       for (const side of [-1, 1]) {
         const lobe = new THREE.Group();
         const segs = [
-          { dy: 12, r: 3.0 }, { dy: 7, r: 3.8 }, { dy: 1.5, r: 4.3 }, { dy: -4, r: 4.0 }, { dy: -9, r: 3.1 }
+          { dy: 14, r: 3.6, dx: 0.5 }, { dy: 10, r: 4.8, dx: 0.15 }, { dy: 5.8, r: 5.6, dx: -0.15 },
+          { dy: 1.6, r: 6.0, dx: -0.35 }, { dy: -2.6, r: 5.8, dx: -0.45 }, { dy: -6.6, r: 5.2, dx: -0.6 },
+          { dy: -10.4, r: 4.2, dx: -0.8 }
         ];
-        for (const seg of segs) {
-          const s = new THREE.Mesh(new THREE.SphereGeometry(seg.r, 18, 14), mat);
-          s.position.set(pos.x + side * 5.5, pos.y + seg.dy, pos.z + Math.sin(side * 1.3) * 2);
+        segs.forEach((seg, i) => {
+          const s = new THREE.Mesh(new THREE.SphereGeometry(seg.r, 20, 16), col(i));
+          s.position.set(pos.x + side * (6.2 + seg.dx), pos.y + seg.dy, pos.z + side * 1.2);
           lobe.add(s);
           this.alveoli.push(s);
-        }
-        lobe.rotation.z = side * 0.16;   /* 肺尖略向外張 */
+        });
+        lobe.rotation.z = side * 0.1;   /* 肺門內凹、肺尖外傾的整體姿態 */
         this.scene.add(lobe);
         this.lungLobes.push(lobe);
       }
@@ -160,7 +165,6 @@
       this.tissueMesh = new THREE.InstancedMesh(geo, mat, N);
       const m = new THREE.Matrix4();
       const q = new THREE.Quaternion(), eu = new THREE.Euler();
-      const one = new THREE.Vector3(1, 1, 1);
       let i = 0;
       for (let gx = 0; gx < 12; gx++) for (let gy = 0; gy < 10; gy++) {
         const x = pos.x + 14 + gx * 2.4, y = pos.y - 9 + gy * 2.2, z = pos.z - 12 + this.vrng.next() * 2;
@@ -176,6 +180,103 @@
       this.tissueMesh.instanceMatrix.needsUpdate = true;
       this.scene.add(this.tissueMesh);
       this._tissueBase = pos.clone();
+    },
+
+    _buildRibcage() {
+      /* U6：寫實胸腔——肋弓弧＋胸骨＋脊椎椎體＋橫膈膜＋氣管支氣管。
+         胸廓中心取肺與心三站均值，包住心肺複合體；骨／軟骨／肌肉材質。 */
+      const cc = V3(STATION_POS.LUNG_CAP).add(V3(STATION_POS.HEART_L)).add(V3(STATION_POS.HEART_R)).multiplyScalar(1 / 3);
+      const bone = new THREE.MeshStandardMaterial({ color: 0xb0a491, roughness: 0.6,
+        transparent: true, opacity: 0.42 });
+      const muscle = new THREE.MeshStandardMaterial({ color: 0x8f4040, roughness: 0.6,
+        transparent: true, opacity: 0.55, side: THREE.DoubleSide });
+      const cartilage = new THREE.MeshStandardMaterial({ color: 0xb9c4d0, roughness: 0.45,
+        transparent: true, opacity: 0.4 });
+      /* 肋弓：上寬下收的胸廓錐度，開口朝背（脊椎側）；貼合心肺複合體、半透明不搶主體 */
+      for (let i = 0; i < 7; i++) {
+        const ry = cc.y + 13 - i * 3.1;
+        const rx = 13.5 - i * 0.55, rz = 8.6 - i * 0.35;
+        const rib = new THREE.Mesh(
+          new THREE.TorusGeometry(1, 0.34, 8, 48, Math.PI * 1.5),
+          bone
+        );
+        rib.scale.set(rx, rz, 1);
+        rib.rotation.x = Math.PI / 2;
+        rib.rotation.z = -Math.PI * 0.25;           /* 開口置於背側 */
+        rib.position.set(cc.x, ry, cc.z - 2);
+        this.scene.add(rib);
+      }
+      /* 胸骨：前正中薄板 */
+      const sternum = new THREE.Mesh(new THREE.BoxGeometry(1.3, 10.5, 0.8), bone);
+      sternum.position.set(cc.x, cc.y + 5.5, cc.z + 12.6);
+      this.scene.add(sternum);
+      /* 脊椎：背側椎體堆疊（含生理弧度） */
+      for (let i = 0; i < 9; i++) {
+        const v = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 2.0, 12), bone);
+        v.position.set(cc.x - 1 + Math.sin(i * 0.5) * 1.0, cc.y + 14 - i * 3.1, cc.z - 15.5);
+        this.scene.add(v);
+      }
+      /* 橫膈膜：肺下穹頂肌面 */
+      const dia = new THREE.Mesh(
+        new THREE.SphereGeometry(17, 28, 16, 0, Math.PI * 2, Math.PI * 0.55, Math.PI * 0.45),
+        muscle
+      );
+      dia.scale.set(1.15, 0.42, 0.95);
+      dia.position.set(cc.x, cc.y - 14.5, cc.z - 1);
+      this.scene.add(dia);
+      /* 氣管＋左右支氣管：半透明軟骨管，自主上方下行分岔入兩肺 */
+      const tracheaPts = [new THREE.Vector3(cc.x, cc.y + 24, cc.z - 5), new THREE.Vector3(cc.x, cc.y + 17, cc.z - 5),
+        new THREE.Vector3(cc.x, cc.y + 11, cc.z - 5)];
+      const trachea = new THREE.Mesh(new THREE.TubeGeometry(
+        new THREE.CatmullRomCurve3(tracheaPts), 16, 0.95, 10), cartilage);
+      this.scene.add(trachea);
+      for (const side of [-1, 1]) {
+        const pts = [new THREE.Vector3(cc.x, cc.y + 11, cc.z - 5),
+          new THREE.Vector3(cc.x + side * 3.2, cc.y + 7, cc.z - 3),
+          new THREE.Vector3(cc.x + side * 5.6, cc.y + 2.5, cc.z + side * 0.5)];
+        const bronchus = new THREE.Mesh(new THREE.TubeGeometry(
+          new THREE.CatmullRomCurve3(pts), 14, 0.7, 10), cartilage);
+        this.scene.add(bronchus);
+      }
+    },
+
+    _buildHearts() {
+      /* U6：解剖形態心——心室主體＋心尖錐＋上緣心房球；左心加主動脈弓，
+         右心加肺動脈短管。心跳脈動（既有節律）作用於 Group。 */
+      const mk = (pos, color, withAorta) => {
+        const grp = new THREE.Group();
+        const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.38,
+          emissive: 0x2a0a0a, emissiveIntensity: 0.45 });
+        const body = new THREE.Mesh(new THREE.SphereGeometry(4.4, 24, 18), mat);
+        body.scale.set(1, 1.18, 0.92);
+        const apex = new THREE.Mesh(new THREE.ConeGeometry(3.5, 5.4, 20), mat);
+        apex.position.set(-0.6, -4.6, 0); apex.rotation.x = Math.PI; apex.rotation.z = 0.18;
+        const atrL = new THREE.Mesh(new THREE.SphereGeometry(2.3, 16, 12), mat);
+        atrL.position.set(-2.1, 3.6, 0.4);
+        const atrR = new THREE.Mesh(new THREE.SphereGeometry(2.1, 16, 12), mat);
+        atrR.position.set(2.1, 3.4, -0.3);
+        grp.add(body, apex, atrL, atrR);
+        if (withAorta) {
+          const arch = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([
+            new THREE.Vector3(0.4, 3.4, 0), new THREE.Vector3(1.2, 6.6, -0.6),
+            new THREE.Vector3(-0.6, 8.4, -1.0), new THREE.Vector3(-2.6, 7.4, -1.2),
+            new THREE.Vector3(-3.4, 5.4, -1.0)
+          ]), 24, 1.05, 12), mat);
+          grp.add(arch);
+        } else {
+          const pa = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([
+            new THREE.Vector3(-0.4, 3.6, 0.4), new THREE.Vector3(-1.0, 6.0, 0.8),
+            new THREE.Vector3(-1.4, 7.6, 0.6)
+          ]), 16, 1.15, 12), mat);
+          grp.add(pa);
+        }
+        grp.position.copy(V3(pos));
+        grp.rotation.z = 0.12; grp.rotation.y = -0.15;
+        this.scene.add(grp);
+        return grp;
+      };
+      this.heartL = mk(STATION_POS.HEART_L, 0xa63a44, true);
+      this.heartR = mk(STATION_POS.HEART_R, 0x8c2f4a, false);
     },
 
     _buildHearts() {
