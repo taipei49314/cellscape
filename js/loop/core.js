@@ -352,7 +352,10 @@
         }
       }
       /* 3.5) RBC 世代輪替（0.8.0／T-329 F3）：滿圈數退役，同槽在肺端替換。
-         殘餘 load 記 ledger.expelled（離開抽樣體）——不憑空消失、不偽造使用。 */
+         殘餘 load 記 ledger.expelled（離開抽樣體）——不憑空消失、不偽造使用。
+         替換 RBC 以 0.12 進入抽樣體，必須記入 ledger.input（T-400：未入帳會
+         在首次退役後每 30 tick 噴 ledgerViolation；288×0.12＝34.56）。
+         WBC 負載恆 0，進出不進氧帳。 */
       if (e.kind === 'rbc' && e.loops >= CSL.RBC_MAX_LOOPS) {
         const residual = e.load;
         const lungIdx = CSL.EDGES.findIndex((ed) => ed.id === 'LUNG_CAP');
@@ -367,6 +370,7 @@
         e.edge = lungIdx < 0 ? 0 : lungIdx;
         e.s = 0;
         e.load = 0.12;
+        w.ledger.input += 0.12;
         e.loops = 0;
       }
     }
