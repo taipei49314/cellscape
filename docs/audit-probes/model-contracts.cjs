@@ -571,6 +571,56 @@ const SETUP = `
       && r.worstGres <= 1e-6 && r.worstO2 <= 1e-6, JSON.stringify(r));
 }
 
+/* 23. T-400：RBC 退役替換的 0.12 必須記入 ledger.input。未修時首次退役後
+       （約 tick 4320）每 30 tick 噴 ledgerViolation，殘差 = −n×0.12。
+       感染路徑 WBC 進出負載恆 0，不是氧帳破口。契約：idle／infection／
+       snapshot+restore 各 5000 tick（跨過首次退役）零 ledgerViolation 且殘差 ≤1e-6。 */
+{
+  const c = freshEnv();
+  const r = run(c, `(()=>{${SETUP}
+    const runCase = (setup) => {
+      const w = CSL.createWorld({ seed: 20260915 });
+      setup(w);
+      let viol = 0, retire = 0;
+      for (let i = 0; i < 5000; i++) {
+        CSL.step(w);
+        for (let e = w.events.length - 1; e >= 0; e--) {
+          const ev = w.events[e];
+          if (ev.tick !== w.tick) break;
+          if (ev.ruleId === 'ledgerViolation') viol++;
+          if (ev.kind === 'rbc_retire') retire++;
+        }
+      }
+      return { viol, retire, residual: Math.abs(CSL.ledgerResidual(w)), tick: w.tick };
+    };
+    const idle = runCase(() => {});
+    const inf = runCase((w) => { applyParams(w, { infection: 1 }); });
+    const restored = (() => {
+      const w = CSL.createWorld({ seed: 20260915 });
+      for (let i = 0; i < 120; i++) CSL.step(w);
+      const snap = CSL.snapshot(w);
+      const a = CSL.createWorld({ seed: w.seed, runId: 'A', branchOf: w.runId });
+      CSL.restore(a, snap);
+      applyParams(a, { infection: 1 });
+      let viol = 0, retire = 0;
+      for (let i = 0; i < 5000; i++) {
+        CSL.step(a);
+        for (let e = a.events.length - 1; e >= 0; e--) {
+          const ev = a.events[e];
+          if (ev.tick !== a.tick) break;
+          if (ev.ruleId === 'ledgerViolation') viol++;
+          if (ev.kind === 'rbc_retire') retire++;
+        }
+      }
+      return { viol, retire, residual: Math.abs(CSL.ledgerResidual(a)), tick: a.tick };
+    })();
+    return { idle, inf, restored };
+  })()`);
+  const ok = (x) => x.retire >= 1 && x.viol === 0 && x.residual <= 1e-6;
+  check('retire-replacement-ledger-closes',
+    ok(r.idle) && ok(r.inf) && ok(r.restored), JSON.stringify(r));
+}
+
 console.log('=== model behaviour contracts (0.3.0 / 0.4.0 / 0.5.0 / 0.5.1 / 0.6.0 / 0.8.0 / 0.9.0 / 0.10.0 / 1.0.0 / 1.1.0 / 1.2.0) ===');
 let fails = 0;
 for (const r of results) {
